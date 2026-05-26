@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentShop } from '@/lib/shop'
 import Link from 'next/link'
+import { QrDisplay } from '@/components/qr-display'
 
 type ThisMonthVehicle = {
   id: string
@@ -71,6 +72,11 @@ export default async function DashboardPage() {
         <Stat label="今月車検" value={`${thisMonthVehicles.length}台`} />
       </section>
 
+      <RegistrationQrSection
+        token={shop.registration_token}
+        shopName={shop.name}
+      />
+
       <section className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-black">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">◆ 今月、車検が来るお客さん</h2>
@@ -116,6 +122,40 @@ export default async function DashboardPage() {
         )}
       </section>
     </main>
+  )
+}
+
+async function RegistrationQrSection({
+  token,
+  shopName,
+}: {
+  token: string
+  shopName: string
+}) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+  const registrationUrl = `${appUrl}/r/${token}`
+
+  return (
+    <section className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-black">
+      <h2 className="text-base font-semibold">
+        ◆ お客様向け 登録QR・URL
+      </h2>
+      <p className="mt-1 text-sm text-zinc-500">
+        このQR / URL をお客様に渡すと、お客様自身が愛車を{shopName}に登録できます。
+      </p>
+      <div className="mt-4 flex flex-col items-start gap-6 sm:flex-row sm:items-center">
+        <QrDisplay text={registrationUrl} />
+        <div className="flex-1 space-y-2">
+          <p className="text-xs text-zinc-500">登録URL</p>
+          <code className="block break-all rounded-md bg-zinc-50 px-3 py-2 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+            {registrationUrl}
+          </code>
+          <p className="text-xs text-zinc-500">
+            ※ このURLは推測されないランダムな値です。お客様だけにお渡しください。
+          </p>
+        </div>
+      </div>
+    </section>
   )
 }
 

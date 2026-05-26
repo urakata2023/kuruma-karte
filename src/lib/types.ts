@@ -10,6 +10,7 @@ export type Shop = {
   plan: 'trial' | 'standard' | 'pro'
   stripe_customer_id: string | null
   line_channel_token: string | null
+  registration_token: string
   created_at: string
   updated_at: string
 }

@@ -37,7 +37,8 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // 未認証時、保護されたルートへのアクセスを /login にリダイレクト
-  const publicPaths = ['/', '/login', '/signup', '/auth']
+  // /r/* は顧客自身の公開登録フローなので認証不要
+  const publicPaths = ['/', '/login', '/signup', '/auth', '/r']
   const isPublicPath = publicPaths.some(
     (p) =>
       request.nextUrl.pathname === p ||
