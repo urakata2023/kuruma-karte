@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { ConfirmDeleteForm } from '@/components/confirm-delete-form'
 import { deleteCustomer } from '../actions'
 import { deleteVehicle } from '../../vehicles/actions'
-import type { Customer, Vehicle } from '@/lib/types'
+import type { Customer, Vehicle, Notification } from '@/lib/types'
 
 export default async function CustomerDetailPage({
   params,
@@ -32,6 +32,24 @@ export default async function CustomerDetailPage({
     .order('created_at', { ascending: false })
 
   const vehicles = (vehiclesData ?? []) as Vehicle[]
+
+  // 通知履歴（その顧客の全車両分）
+  let notifications: Notification[] = []
+  if (vehicles.length > 0) {
+    const { data: notifData } = await supabase
+      .from('notifications')
+      .select('*')
+      .in(
+        'vehicle_id',
+        vehicles.map((v) => v.id)
+      )
+      .order('scheduled_on', { ascending: false })
+      .limit(20)
+    notifications = (notifData ?? []) as Notification[]
+  }
+
+  // 通知のvehicle_id→車両情報マップ
+  const vehicleMap = new Map(vehicles.map((v) => [v.id, v]))
 
   return (
     <main className="mx-auto w-full max-w-3xl space-y-8 px-6 py-10">
@@ -70,7 +88,9 @@ export default async function CustomerDetailPage({
 
       <section className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-black">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold">登録車両（{vehicles.length}台）</h2>
+          <h2 className="text-base font-semibold">
+            登録車両（{vehicles.length}台）
+          </h2>
           <Link
             href={`/customers/${customer.id}/vehicles/new`}
             className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
@@ -115,6 +135,49 @@ export default async function CustomerDetailPage({
           </ul>
         )}
       </section>
+
+      <section className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-black">
+        <h2 className="text-base font-semibold">
+          通知履歴
+          <span className="ml-2 text-xs font-normal text-zinc-500">
+            （直近20件・車検3ヶ月前 / 1ヶ月前 / 2週間前に自動送信）
+          </span>
+        </h2>
+        {notifications.length === 0 ? (
+          <p className="mt-3 text-sm text-zinc-500">
+            通知履歴はまだありません。
+          </p>
+        ) : (
+          <ul className="mt-3 divide-y divide-zinc-200 dark:divide-zinc-800">
+            {notifications.map((n) => {
+              const v = vehicleMap.get(n.vehicle_id)
+              return (
+                <li
+                  key={n.id}
+                  className="flex items-start justify-between gap-3 py-3 text-sm"
+                >
+                  <div className="flex-1 space-y-1">
+                    <p className="font-medium">
+                      {formatDate(n.scheduled_on)} ·{' '}
+                      <span className={statusClass(n.status)}>
+                        {statusLabel(n.status)}
+                      </span>
+                    </p>
+                    <p className="text-zinc-500">
+                      {v?.model || '車'}（{v?.plate_number || '—'}）
+                      {n.channel === 'mail' && ' · メール'}
+                      {n.channel === 'line' && ' · LINE'}
+                    </p>
+                    {n.message && (
+                      <p className="text-xs text-zinc-400">{n.message}</p>
+                    )}
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </section>
     </main>
   )
 }
@@ -140,4 +203,32 @@ function formatDate(d: string | null): string {
   if (!d) return '未登録'
   const [y, m, day] = d.split('-')
   return `${y}/${m}/${day}`
+}
+
+function statusLabel(s: string): string {
+  switch (s) {
+    case 'sent':
+      return '送信済み'
+    case 'pending':
+      return '送信待ち'
+    case 'failed':
+      return '送信失敗'
+    case 'cancelled':
+      return 'キャンセル'
+    default:
+      return s
+  }
+}
+
+function statusClass(s: string): string {
+  switch (s) {
+    case 'sent':
+      return 'text-green-600 dark:text-green-400'
+    case 'failed':
+      return 'text-red-600 dark:text-red-400'
+    case 'pending':
+      return 'text-zinc-500'
+    default:
+      return 'text-zinc-500'
+  }
 }
