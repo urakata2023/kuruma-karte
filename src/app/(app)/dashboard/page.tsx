@@ -2,6 +2,20 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentShop } from '@/lib/shop'
 import Link from 'next/link'
 
+type ThisMonthVehicle = {
+  id: string
+  model: string | null
+  plate_number: string | null
+  inspection_expires_on: string | null
+  customer_id: string
+}
+
+type CustomerLite = {
+  id: string
+  name: string
+  phone: string | null
+}
+
 export default async function DashboardPage() {
   const { shop } = await getCurrentShop()
   const supabase = await createClient()
@@ -25,9 +39,7 @@ export default async function DashboardPage() {
       .eq('shop_id', shop.id),
     supabase
       .from('vehicles')
-      .select(
-        'id, model, plate_number, inspection_expires_on, customers(name, phone)'
-      )
+      .select('id, model, plate_number, inspection_expires_on, customer_id')
       .eq('shop_id', shop.id)
       .gte('inspection_expires_on', monthStart)
       .lte('inspection_expires_on', monthEnd)
@@ -36,14 +48,20 @@ export default async function DashboardPage() {
 
   const customerCount = customersR.count ?? 0
   const vehicleCount = vehiclesR.count ?? 0
-  type ThisMonthVehicle = {
-    id: string
-    model: string | null
-    plate_number: string | null
-    inspection_expires_on: string | null
-    customers: { name: string; phone: string | null }[] | null
-  }
   const thisMonthVehicles = (thisMonthR.data ?? []) as ThisMonthVehicle[]
+
+  // 顧客名を1クエリで取得してマップ化（Supabase外部キー埋め込みは型がブレるためN+1回避の自前JOIN）
+  const customerMap = new Map<string, CustomerLite>()
+  const customerIds = thisMonthVehicles.map((v) => v.customer_id)
+  if (customerIds.length > 0) {
+    const { data: customers } = await supabase
+      .from('customers')
+      .select('id, name, phone')
+      .in('id', customerIds)
+    for (const c of (customers ?? []) as CustomerLite[]) {
+      customerMap.set(c.id, c)
+    }
+  }
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
@@ -69,25 +87,31 @@ export default async function DashboardPage() {
           </p>
         ) : (
           <ul className="mt-3 divide-y divide-zinc-200 dark:divide-zinc-800">
-            {thisMonthVehicles.map((v) => (
-              <li
-                key={v.id}
-                className="flex items-center justify-between py-3 text-sm"
-              >
-                <div>
-                  <p className="font-medium">
-                    {v.customers?.[0]?.name ?? '—'} 様
-                  </p>
-                  <p className="text-zinc-500">
-                    {v.model || '車種不明'} / {v.plate_number || 'ナンバー未登録'}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-medium">{formatDate(v.inspection_expires_on)}</p>
-                  <p className="text-xs text-zinc-500">満了予定</p>
-                </div>
-              </li>
-            ))}
+            {thisMonthVehicles.map((v) => {
+              const customer = customerMap.get(v.customer_id)
+              return (
+                <li
+                  key={v.id}
+                  className="flex items-center justify-between py-3 text-sm"
+                >
+                  <div>
+                    <Link
+                      href={`/customers/${v.customer_id}`}
+                      className="font-medium hover:underline"
+                    >
+                      {customer?.name ?? '—'} 様
+                    </Link>
+                    <p className="text-zinc-500">
+                      {v.model || '車種不明'} / {v.plate_number || 'ナンバー未登録'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium">{formatDate(v.inspection_expires_on)}</p>
+                    <p className="text-xs text-zinc-500">満了予定</p>
+                  </div>
+                </li>
+              )
+            })}
           </ul>
         )}
       </section>
