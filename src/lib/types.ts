@@ -54,3 +54,17 @@ export type Notification = {
   message: string | null
   created_at: string
 }
+
+export type MaintenanceRecord = {
+  id: string
+  vehicle_id: string
+  shop_id: string
+  performed_on: string
+  mileage_km: number | null
+  title: string
+  description: string | null
+  parts: string | null
+  cost: number | null
+  created_at: string
+  updated_at: string
+}

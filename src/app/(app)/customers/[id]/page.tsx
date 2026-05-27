@@ -118,6 +118,12 @@ export default async function CustomerDetailPage({
                     </p>
                   </div>
                   <div className="flex items-center gap-3 whitespace-nowrap">
+                    <Link
+                      href={`/vehicles/${v.id}`}
+                      className="text-sm font-medium underline"
+                    >
+                      詳細・整備記録
+                    </Link>
                     <a
                       href={`/my/${v.view_token}`}
                       target="_blank"
@@ -126,12 +132,6 @@ export default async function CustomerDetailPage({
                     >
                       マイページ
                     </a>
-                    <Link
-                      href={`/vehicles/${v.id}/edit`}
-                      className="text-sm font-medium underline"
-                    >
-                      編集
-                    </Link>
                     <ConfirmDeleteForm
                       action={deleteVehicle.bind(null, v.id, customer.id)}
                       label={`${v.model || '車'}（${v.plate_number || ''}）`}
