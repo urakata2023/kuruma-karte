@@ -128,14 +128,21 @@ export function CertPhotoModal({
     }
   }
 
-  /** 電子車検証の推定値モードで完了 */
-  function proceedWithEstimate() {
-    if (!electronicResult) return
-    const estimated = estimateExpiration(electronicResult)
+  /**
+   * 電子車検証の推定値モードで完了。
+   * carType = 'used' (継続/中古, 2年) or 'new' (新車, 3年)
+   *
+   * デフォルト '中古2年' なのは、町工場/整備工場の客層では 99% が中古/継続だから。
+   * 新車は店主が「新車として進む」をワンタップで選ぶレアフロー。
+   */
+  function proceedWithEstimate(carType: 'used' | 'new') {
+    if (!electronicResult?.registration_date) return
+    const years = carType === 'new' ? 3 : 2
+    const estimated = addYears(electronicResult.registration_date, years)
     const fields: CertOcrFields = {
       ...toFields(electronicResult, false),
       inspection_expires_on: estimated,
-      inspection_expires_on_estimated: estimated !== null,
+      inspection_expires_on_estimated: true,
     }
     setStage('done')
     onComplete(fields)
@@ -203,7 +210,6 @@ export function CertPhotoModal({
         {reviewing && electronicResult ? (
           <ElectronicCertReview
             result={electronicResult}
-            estimated={estimateExpiration(electronicResult)}
             onUseEstimate={proceedWithEstimate}
             onManual={proceedWithoutExpiration}
             onRetry={retryPhoto}
@@ -290,23 +296,26 @@ export function CertPhotoModal({
 
 /**
  * 電子車検証検出時のレビュー画面。
- * - 推定満了日を計算して表示
- * - 「推定値で進む」「別紙を撮り直す」「手入力する」の3択
+ *
+ * 「町工場/整備工場の顧客は 99% が中古車・継続車検」という前提で、
+ *  中古2年を主役ボタン (黒/大)、新車3年を副ボタン (白/中) に。
+ *  AIの自動判定はやらない (誤判定リスクと、選ぶ手間が同じだから)。
  */
 function ElectronicCertReview({
   result,
-  estimated,
   onUseEstimate,
   onManual,
   onRetry,
 }: {
   result: CertOcrApiResult
-  estimated: string | null
-  onUseEstimate: () => void
+  onUseEstimate: (carType: 'used' | 'new') => void
   onManual: () => void
   onRetry: () => void
 }) {
-  const isNew = isNewCar(result)
+  const regDate = result.registration_date
+  const usedEstimate = regDate ? addYears(regDate, 2) : null
+  const newEstimate = regDate ? addYears(regDate, 3) : null
+  const isCommercial = result.usage === 'commercial'
 
   return (
     <div className="space-y-4">
@@ -335,77 +344,68 @@ function ElectronicCertReview({
         </ul>
       </div>
 
-      {estimated && (
-        <div className="space-y-1 rounded-md border border-blue-300 bg-blue-50 p-3 text-xs dark:border-blue-700 dark:bg-blue-950">
-          <p className="font-medium text-blue-900 dark:text-blue-200">
-            推定 車検満了日: <span className="text-base font-bold">{estimated}</span>
-          </p>
-          <p className="text-blue-800 dark:text-blue-300">
-            ({isNew ? '新車・初回車検 (3年)' : '継続車検 (2年)'} として計算)
-            <br />
-            ※ あくまで推定値。お客様にご確認ください
-          </p>
+      {isCommercial ? (
+        <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-700 dark:bg-red-950 dark:text-red-300">
+          事業用車のため自動推定はできません。手入力か別紙撮影でお願いします。
         </div>
+      ) : (
+        <>
+          <p className="text-center text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            どちらに該当しますか？
+          </p>
+
+          <div className="space-y-2">
+            {usedEstimate && (
+              <button
+                type="button"
+                onClick={() => onUseEstimate('used')}
+                className="w-full rounded-md bg-zinc-900 px-4 py-3 text-left text-sm font-semibold text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span>🔧 中古車・継続車検として進む</span>
+                  <span className="rounded bg-white/20 px-2 py-0.5 text-[10px] font-medium dark:bg-black/20">
+                    ほとんどコレ
+                  </span>
+                </div>
+                <div className="mt-1 text-xs font-normal opacity-80">
+                  推定 車検満了日: <b>{usedEstimate}</b>（登録 +2年）
+                </div>
+              </button>
+            )}
+            {newEstimate && (
+              <button
+                type="button"
+                onClick={() => onUseEstimate('new')}
+                className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-left text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+              >
+                <div>✨ 新車として進む（初回車検）</div>
+                <div className="mt-1 text-xs font-normal text-zinc-500">
+                  推定 車検満了日: <b>{newEstimate}</b>（登録 +3年）
+                </div>
+              </button>
+            )}
+          </div>
+        </>
       )}
 
-      <div className="space-y-2">
-        {estimated && (
-          <button
-            type="button"
-            onClick={onUseEstimate}
-            className="w-full rounded-md bg-zinc-900 px-4 py-3 text-sm font-semibold text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-          >
-            推定値で進む（あとで修正可能）
-          </button>
-        )}
+      <div className="space-y-2 border-t border-zinc-200 pt-3 dark:border-zinc-800">
         <button
           type="button"
           onClick={onRetry}
-          className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+          className="w-full rounded-md border border-zinc-300 bg-white px-4 py-2 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
         >
           別紙「記録事項」を撮り直す
         </button>
         <button
           type="button"
           onClick={onManual}
-          className="w-full rounded-md border border-zinc-300 bg-white px-4 py-3 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+          className="w-full rounded-md border border-zinc-300 bg-white px-4 py-2 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
         >
           満了日は手入力する
         </button>
       </div>
     </div>
   )
-}
-
-/**
- * 新車かどうか判定: 初度登録年月と登録年月日の「年月」が一致 = この車検証が新車登録時に発行された
- */
-function isNewCar(r: CertOcrApiResult): boolean {
-  if (!r.first_registration_ym || !r.registration_date) return false
-  const regYm = r.registration_date.slice(0, 7) // YYYY-MM
-  return regYm === r.first_registration_ym
-}
-
-/**
- * 車検満了日を推定する。
- * 自家用乗用: 新車=3年, 継続=2年
- * 自家用貨物: 2年
- * 事業用: 1年 (推定値の信頼性が低いので null を返す)
- */
-function estimateExpiration(r: CertOcrApiResult): string | null {
-  if (!r.registration_date) return null
-
-  let years = 2 // デフォルト: 自家用乗用の継続車検
-  if (r.usage === 'private_passenger' || r.usage === null) {
-    years = isNewCar(r) ? 3 : 2
-  } else if (r.usage === 'private_cargo') {
-    years = 2
-  } else if (r.usage === 'commercial') {
-    // 事業用は1年が基本だが信頼性低いので推定値は出さない
-    return null
-  }
-
-  return addYears(r.registration_date, years)
 }
 
 function addYears(yyyymmdd: string, years: number): string {
