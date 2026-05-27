@@ -29,8 +29,14 @@ export function MaintenanceTimeline({
   const filtered = records
     .filter((r) => filter === 'all' || r.created_by === filter)
     .sort((a, b) => {
-      const diff = a.performed_on.localeCompare(b.performed_on)
-      return sort === 'newest' ? -diff : diff
+      // 1. まず整備日 (performed_on) で比較
+      const dateDiff = a.performed_on.localeCompare(b.performed_on)
+      if (dateDiff !== 0) {
+        return sort === 'newest' ? -dateDiff : dateDiff
+      }
+      // 2. 同日なら記録した時刻 (created_at) で比較
+      const timeDiff = a.created_at.localeCompare(b.created_at)
+      return sort === 'newest' ? -timeDiff : timeDiff
     })
 
   return (

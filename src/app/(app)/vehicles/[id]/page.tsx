@@ -34,7 +34,8 @@ export default async function VehicleDetailPage({
       .from('maintenance_records')
       .select('*')
       .eq('vehicle_id', vehicle.id)
-      .order('performed_on', { ascending: false }),
+      .order('performed_on', { ascending: false })
+      .order('created_at', { ascending: false }),
   ])
 
   const records = (recordsData ?? []) as MaintenanceRecord[]
