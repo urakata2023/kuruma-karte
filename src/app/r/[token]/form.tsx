@@ -27,6 +27,7 @@ export function PublicRegistrationForm({
   // 車検証写真OCR
   const [ocrOpen, setOcrOpen] = useState(false)
   const [ocrNotice, setOcrNotice] = useState<string | null>(null)
+  const [expiresEstimated, setExpiresEstimated] = useState(false)
 
   function handleOcrComplete(fields: CertOcrFields) {
     const applied: string[] = []
@@ -50,19 +51,28 @@ export function PublicRegistrationForm({
       setValue(
         'inspection_expires_on',
         fields.inspection_expires_on,
-        '車検満了日'
+        fields.inspection_expires_on_estimated
+          ? '車検満了日(推定)'
+          : '車検満了日'
       )
     }
 
     setOcrOpen(false)
+    setExpiresEstimated(
+      fields.inspection_expires_on_estimated && !!fields.inspection_expires_on
+    )
     if (applied.length === 0) {
       setOcrNotice(
         '写真からは自動入力できる項目が見つかりませんでした。お手数ですが下の欄に手入力してください。'
       )
+    } else if (fields.is_electronic_cert) {
+      setOcrNotice(
+        `📋 電子車検証 (A6) として処理しました：${applied.join(' / ')}`
+      )
     } else {
       setOcrNotice(`✓ AIが自動入力しました：${applied.join(' / ')}`)
     }
-    setTimeout(() => setOcrNotice(null), 8000)
+    setTimeout(() => setOcrNotice(null), 12000)
   }
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -228,6 +238,12 @@ export function PublicRegistrationForm({
           type="date"
           hint="車検証に記載されている満了日をご入力ください"
         />
+        {expiresEstimated && (
+          <div className="-mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
+            ⚠️ <b>推定値</b>です（電子車検証のため紙からは読み取れず、登録年月日＋用途から算出）。
+            別紙「自動車検査証記録事項」を見て、ズレていたら修正してください。
+          </div>
+        )}
       </fieldset>
 
       {state?.error && (

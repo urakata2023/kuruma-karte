@@ -32,6 +32,8 @@ export function VehicleForm({
   // 車検証写真OCR (Claude Vision)
   const [ocrOpen, setOcrOpen] = useState(false)
   const [ocrNotice, setOcrNotice] = useState<string | null>(null)
+  // 推定値表示 (電子車検証のときに黄色警告を出す)
+  const [expiresEstimated, setExpiresEstimated] = useState(false)
 
   function handleOcrComplete(fields: CertOcrFields) {
     const applied: string[] = []
@@ -58,7 +60,9 @@ export function VehicleForm({
       setValue(
         'inspection_expires_on',
         fields.inspection_expires_on,
-        '車検満了日'
+        fields.inspection_expires_on_estimated
+          ? '車検満了日(推定)'
+          : '車検満了日'
       )
     }
     if (fields.first_registration_ym) {
@@ -70,14 +74,21 @@ export function VehicleForm({
     }
 
     setOcrOpen(false)
+    setExpiresEstimated(
+      fields.inspection_expires_on_estimated && !!fields.inspection_expires_on
+    )
     if (applied.length === 0) {
       setOcrNotice(
         '写真から自動入力できる項目が見つかりませんでした。手入力でお願いします。'
       )
+    } else if (fields.is_electronic_cert) {
+      setOcrNotice(
+        `📋 電子車検証 (A6) として処理しました：${applied.join(' / ')}`
+      )
     } else {
       setOcrNotice(`✓ AIが自動入力しました: ${applied.join(' / ')}`)
     }
-    setTimeout(() => setOcrNotice(null), 8000)
+    setTimeout(() => setOcrNotice(null), 12000)
   }
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -227,6 +238,12 @@ export function VehicleForm({
         defaultValue={vehicle?.inspection_expires_on ?? ''}
         hint="ここが入っていると、車検3ヶ月前から自動通知の対象になります"
       />
+      {expiresEstimated && (
+        <div className="-mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
+          ⚠️ <b>推定値</b>です（電子車検証のため紙からは読み取れず、登録年月日＋用途から算出）。
+          別紙「自動車検査証記録事項」を確認のうえ、必要に応じて修正してください。
+        </div>
+      )}
       <Field
         name="purchased_on"
         label="購入日"
