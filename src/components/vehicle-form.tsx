@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import imageCompression from 'browser-image-compression'
+import { processVehiclePhoto } from '@/lib/image-process'
 import type { Vehicle } from '@/lib/types'
 
 type State = { error?: string } | undefined
@@ -21,27 +21,27 @@ export function VehicleForm({
     vehicle?.photo_url ?? null
   )
   const [compressing, setCompressing] = useState(false)
+  const [photoError, setPhotoError] = useState<string | null>(null)
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
 
     setCompressing(true)
+    setPhotoError(null)
     try {
-      const compressed = await imageCompression(file, {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1920,
-        useWebWorker: true,
-      })
+      const processed = await processVehiclePhoto(file)
       const dt = new DataTransfer()
-      dt.items.add(
-        new File([compressed], compressed.name, { type: compressed.type })
-      )
+      dt.items.add(processed)
       e.target.files = dt.files
-      setPhotoPreview(URL.createObjectURL(compressed))
+      setPhotoPreview(URL.createObjectURL(processed))
     } catch (err) {
-      console.error('画像圧縮失敗、元画像を使用します:', err)
-      setPhotoPreview(URL.createObjectURL(file))
+      const msg = err instanceof Error ? err.message : JSON.stringify(err)
+      console.error('画像処理失敗:', msg, err)
+      setPhotoError(
+        '写真の読み込みに失敗しました。JPEG/PNG 形式でお試しください。'
+      )
+      e.target.value = ''
     } finally {
       setCompressing(false)
     }
@@ -74,14 +74,18 @@ export function VehicleForm({
             <input
               type="file"
               name="photo"
-              accept="image/*"
+              accept="image/*,.heic,.heif"
               onChange={handlePhotoChange}
               disabled={compressing}
               className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-zinc-900 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-zinc-800 disabled:opacity-50 dark:file:bg-white dark:file:text-black"
             />
-            <p className="mt-1 text-xs text-zinc-500">
-              自動で1MB以下に圧縮されます。お客様向けマイページのトップに表示。
-            </p>
+            {photoError ? (
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{photoError}</p>
+            ) : (
+              <p className="mt-1 text-xs text-zinc-500">
+                iPhone(HEIC) も自動で JPEG に変換・1MB以下に圧縮されます
+              </p>
+            )}
           </div>
         </div>
       </div>
