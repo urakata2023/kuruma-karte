@@ -10,7 +10,7 @@ import { AlwaysWithYou } from '@/components/always-with-you'
 import { OwnerHeroPhoto } from '@/components/owner-hero-photo'
 import { PlateDisplay } from '@/components/plate-display'
 import { TouringList } from '@/components/touring-list'
-import { TouringMap } from '@/components/touring-map'
+import { CollapsibleMap } from '@/components/collapsible-map'
 import { ToastBanner } from '@/components/toast-banner'
 import {
   calcMonthlyAverageKm,
@@ -299,7 +299,7 @@ export default async function OwnerMyPage({
         {/* マップ表示 or 案内 */}
         {tourings.length > 0 &&
         tourings.some((t) => t.latitude != null && t.longitude != null) ? (
-          <TouringMap records={tourings} />
+          <CollapsibleMap records={tourings} />
         ) : tourings.length > 0 ? (
           <div className="rounded-xl border border-dashed border-zinc-300 p-5 text-center text-sm text-zinc-500 dark:border-zinc-700">
             🗺️ 地図ピンを表示するには、各記録に住所か場所の名前が必要です。
