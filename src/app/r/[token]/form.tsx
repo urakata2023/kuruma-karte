@@ -49,11 +49,7 @@ export function PublicRegistrationForm({
   }
 
   return (
-    <form
-      action={formAction}
-      className="space-y-6"
-      encType="multipart/form-data"
-    >
+    <form action={formAction} className="space-y-6">
       <fieldset className="space-y-4">
         <legend className="text-base font-semibold">あなたの情報</legend>
         <Field name="name" label="お名前" required placeholder="例：田中 太郎" />

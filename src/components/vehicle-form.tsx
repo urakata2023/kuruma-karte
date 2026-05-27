@@ -48,7 +48,7 @@ export function VehicleForm({
   }
 
   return (
-    <form action={formAction} className="space-y-4" encType="multipart/form-data">
+    <form action={formAction} className="space-y-4">
       <div className="space-y-2">
         <label className="block text-sm font-medium">
           愛車の写真

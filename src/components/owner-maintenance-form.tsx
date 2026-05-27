@@ -64,11 +64,7 @@ export function OwnerMaintenanceForm({
   const todayStr = new Date().toISOString().slice(0, 10)
 
   return (
-    <form
-      action={formAction}
-      className="space-y-4"
-      encType="multipart/form-data"
-    >
+    <form action={formAction} className="space-y-4">
       <div className="space-y-1">
         <label htmlFor="title" className="block text-sm font-medium">
           メモのタイトル *
