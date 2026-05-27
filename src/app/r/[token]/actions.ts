@@ -2,6 +2,11 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { processImageServerSide } from '@/lib/image-server'
+import { getResend, FROM_EMAIL } from '@/lib/resend'
+import {
+  buildWelcomeMailSubject,
+  buildWelcomeMailText,
+} from '@/lib/mail-templates'
 import { redirect } from 'next/navigation'
 
 type State = { error?: string } | undefined
@@ -20,7 +25,7 @@ export async function registerCustomerVehicle(
   // 1. token 検証
   const { data: shop } = await admin
     .from('shops')
-    .select('id, name')
+    .select('id, name, phone')
     .eq('registration_token', token)
     .maybeSingle()
   if (!shop) return { error: 'このリンクは無効です。お店にご確認ください。' }
@@ -53,7 +58,7 @@ export async function registerCustomerVehicle(
     return { error: `お客様情報の登録に失敗しました: ${cErr?.message ?? ''}` }
   }
 
-  // 4. vehicle 作成
+  // 4. vehicle 作成（view_token も取得）
   const { data: newVehicle, error: vErr } = await admin
     .from('vehicles')
     .insert({
@@ -63,7 +68,7 @@ export async function registerCustomerVehicle(
       plate_number,
       inspection_expires_on,
     })
-    .select('id')
+    .select('id, view_token')
     .single()
   if (vErr || !newVehicle) {
     return { error: `車両情報の登録に失敗しました: ${vErr?.message ?? ''}` }
@@ -71,7 +76,11 @@ export async function registerCustomerVehicle(
 
   // 5. 写真があればサーバー側で処理してアップロード
   const photo = formData.get('photo')
-  if (photo instanceof File && photo.size > 0 && photo.size <= 20 * 1024 * 1024) {
+  if (
+    photo instanceof File &&
+    photo.size > 0 &&
+    photo.size <= 20 * 1024 * 1024
+  ) {
     try {
       const { buffer, ext, contentType } = await processImageServerSide(photo)
       const path = `${shop.id}/${newVehicle.id}/${Date.now()}.${ext}`
@@ -96,5 +105,37 @@ export async function registerCustomerVehicle(
     }
   }
 
-  redirect(`/r/${token}/done?name=${encodeURIComponent(name)}`)
+  // 6. ウェルカムメール送信（マイページURLを案内）
+  //    Resend未設定でも登録自体は成功扱いにする
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? 'https://kuruma-karte.vercel.app'
+  const myPageUrl = `${appUrl}/my/${newVehicle.view_token}`
+  try {
+    if (process.env.RESEND_API_KEY) {
+      const resend = getResend()
+      const params = {
+        shopName: shop.name,
+        shopPhone: shop.phone,
+        customerName: name,
+        vehicleModel: model,
+        vehiclePlate: plate_number,
+        myPageUrl,
+      }
+      await resend.emails.send({
+        from: `${shop.name} <${FROM_EMAIL}>`,
+        to: email,
+        subject: buildWelcomeMailSubject(params),
+        text: buildWelcomeMailText(params),
+      })
+    } else {
+      console.info('RESEND_API_KEY未設定のためウェルカムメール送信スキップ')
+    }
+  } catch (e) {
+    console.warn('ウェルカムメール送信失敗（登録は成功）:', e)
+  }
+
+  // 7. 完了画面へ（view_token を渡してマイページへの導線に使う）
+  redirect(
+    `/r/${token}/done?name=${encodeURIComponent(name)}&view=${newVehicle.view_token}`
+  )
 }

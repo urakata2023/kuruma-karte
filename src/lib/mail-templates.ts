@@ -1,6 +1,6 @@
 /**
- * 車検リマインドメールの本文ビルダー
- * Phase 2の最初はテキストメールのみ。HTMLは将来追加。
+ * メール本文ビルダー
+ * Phase 2 / Phase 6.7 のテキストメール。HTMLは将来追加。
  */
 
 export type InspectionReminderParams = {
@@ -11,6 +11,66 @@ export type InspectionReminderParams = {
   expiresOn: string // YYYY-MM-DD
   reminderLabel: '3ヶ月' | '1ヶ月' | '2週間'
 }
+
+export type WelcomeMailParams = {
+  shopName: string
+  shopPhone: string | null
+  customerName: string
+  vehicleModel: string | null
+  vehiclePlate: string | null
+  myPageUrl: string
+}
+
+export function buildWelcomeMailSubject(p: WelcomeMailParams): string {
+  return `【${p.shopName}】愛車のご登録ありがとうございます`
+}
+
+export function buildWelcomeMailText(p: WelcomeMailParams): string {
+  const vehicleLine = [p.vehicleModel, p.vehiclePlate]
+    .filter(Boolean)
+    .join(' / ')
+
+  return `${p.customerName} 様
+
+このたびは${p.shopName}への愛車のご登録、誠にありがとうございます。
+
+下記の専用マイページから、ご登録いただいた情報や整備の記録を
+いつでもご確認いただけます。
+
+────────────────────
+◆ あなたの愛車マイページ
+${p.myPageUrl}
+────────────────────
+
+${vehicleLine ? `【ご登録のお車】\n${vehicleLine}\n` : ''}
+● ホーム画面に追加して使うと便利です ●
+このURLをスマホで開き、下記の手順で「ホーム画面に追加」しておくと
+アプリのようにワンタップで開けるようになります。
+
+【iPhone（Safari）】
+1. ページを開いた状態で、下の「共有」ボタンをタップ
+2. メニューを下にスクロールして「ホーム画面に追加」を選択
+3. 右上の「追加」をタップ
+
+【Android（Chrome）】
+1. 右上の「︙」メニューをタップ
+2. 「ホーム画面に追加」を選択
+
+────────────────────
+今後、車検時期が近づきましたらこちらのアドレスへ
+${p.shopName}よりお知らせをお送りいたします。
+
+ご不明な点があれば、お気軽にお問い合わせください。
+${p.shopPhone ? `${p.shopName}：${p.shopPhone}` : p.shopName}
+
+—
+このメールは くるまカルテ から自動送信されています。
+`
+}
+
+// ─────────────────────────────────────────────
+
+
 
 export function buildInspectionReminderSubject(
   p: InspectionReminderParams
