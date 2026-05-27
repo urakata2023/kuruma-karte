@@ -10,12 +10,10 @@ export type QRScanResult = {
 /**
  * 車検証のQRコードをカメラでスキャンするモーダル。
  *
- * 車検証QRは「連結QR(Structured Append)」形式で、複数QRに分割されている。
- * かつ Shift_JIS で日本語が入っている。
- *
- * ZXing JSの BrowserQRCodeReader を使い:
- *  - Structured Append: シーケンスindex/total を読み取り、全部揃ったら連結
- *  - getRawBytes() でバイト列を取り、Shift_JIS→UTF-8 の順で decode
+ * 車検証QRは「連結QR(Structured Append)」形式 (通常4枚に分割) + Shift_JIS。
+ * - ZXing JS で読み取り
+ * - 4つのQRを順次スキャン → 自動連結
+ * - 視覚的なステップ表示で「次にどのQRを映すか」を明示
  */
 export function QrScanModal({
   open,
@@ -28,12 +26,8 @@ export function QrScanModal({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [error, setError] = useState<string | null>(null)
-  const [status, setStatus] = useState<string>(
-    'QRコードを画面中央に映してください'
-  )
-  const [progress, setProgress] = useState<{ done: number; total: number } | null>(
-    null
-  )
+  const [done, setDone] = useState(0)
+  const [total, setTotal] = useState(4) // 車検証は通常4枚
 
   useEffect(() => {
     if (!open) return
@@ -45,14 +39,13 @@ export function QrScanModal({
     let controls: Controls | null = null
     let scanned = false
 
-    // 連結QRの蓄積
     const collected = new Map<number, Uint8Array>()
     let currentParity: number | null = null
     let expectedTotal = 0
 
     setError(null)
-    setStatus('QRコードを画面中央に映してください')
-    setProgress(null)
+    setDone(0)
+    setTotal(4)
 
     ;(async () => {
       try {
@@ -64,7 +57,9 @@ export function QrScanModal({
 
         const hints = new Map()
         hints.set(lib.DecodeHintType.TRY_HARDER, true)
-        hints.set(lib.DecodeHintType.POSSIBLE_FORMATS, [lib.BarcodeFormat.QR_CODE])
+        hints.set(lib.DecodeHintType.POSSIBLE_FORMATS, [
+          lib.BarcodeFormat.QR_CODE,
+        ])
 
         const reader = new BrowserQRCodeReader(hints, {
           delayBetweenScanAttempts: 100,
@@ -76,7 +71,6 @@ export function QrScanModal({
           (result, err) => {
             if (cancelled || scanned) return
             if (err && err.name !== 'NotFoundException') {
-              // NotFoundException は「今フレームに見つからなかった」だけ
               console.debug('zxing error:', err.message)
             }
             if (!result) return
@@ -99,22 +93,27 @@ export function QrScanModal({
             }
 
             if (sequence !== undefined) {
-              // 連結QR: 上位4ビット = index, 下位4ビット = total-1
               const index = (sequence >> 4) & 0x0f
-              const total = (sequence & 0x0f) + 1
+              const totalCount = (sequence & 0x0f) + 1
 
-              // paritiy 変わったら新セット → reset
               if (currentParity !== null && currentParity !== parity) {
                 collected.clear()
               }
               currentParity = parity ?? null
-              expectedTotal = total
+              expectedTotal = totalCount
+
+              const isNew = !collected.has(index)
               collected.set(index, bytes)
 
-              setProgress({ done: collected.size, total })
+              setTotal(totalCount)
+              setDone(collected.size)
+
+              // 振動フィードバック（成功時）
+              if (isNew && 'vibrate' in navigator) {
+                navigator.vibrate?.(100)
+              }
 
               if (collected.size >= expectedTotal) {
-                // 全部揃った → 連結
                 const totalLen = Array.from(collected.values()).reduce(
                   (sum, b) => sum + b.length,
                   0
@@ -128,13 +127,10 @@ export function QrScanModal({
                   offset += part.length
                 }
                 finalize(merged)
-              } else {
-                setStatus(
-                  `✓ ${collected.size}/${expectedTotal} 枚 読み取り完了。次のQRを映してください`
-                )
               }
             } else {
               // 単一QR
+              if ('vibrate' in navigator) navigator.vibrate?.(100)
               finalize(bytes)
             }
           }
@@ -160,6 +156,9 @@ export function QrScanModal({
 
   if (!open) return null
 
+  const nextStep = done + 1
+  const isComplete = done >= total
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
       <div className="w-full max-w-md space-y-3 rounded-xl bg-white p-4 shadow-2xl dark:bg-zinc-900">
@@ -174,6 +173,33 @@ export function QrScanModal({
           </button>
         </div>
 
+        {/* 車検証の視覚的ガイド */}
+        <CertGuide done={done} total={total} />
+
+        {/* メイン指示文 */}
+        {!error && (
+          <div className="rounded-md bg-blue-50 px-3 py-2 text-center text-sm font-medium text-blue-900 dark:bg-blue-950 dark:text-blue-200">
+            {done === 0 ? (
+              <>
+                車検証の <span className="font-bold">下部</span> にあるQRコードを
+                <br />
+                <span className="font-bold text-base">左から順に1つずつ</span> カメラに映してください
+              </>
+            ) : isComplete ? (
+              <>✓ 全部読み込み完了！自動入力します...</>
+            ) : (
+              <>
+                ✓ {done}枚目スキャン完了
+                <br />
+                <span className="font-bold text-base">
+                  次は左から{nextStep}番目のQR
+                </span>{' '}
+                を映してください
+              </>
+            )}
+          </div>
+        )}
+
         <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-black">
           <video
             ref={videoRef}
@@ -181,23 +207,25 @@ export function QrScanModal({
             playsInline
             muted
           />
-          {progress && (
-            <div className="pointer-events-none absolute inset-x-3 bottom-3 rounded-md bg-black/70 px-3 py-2 text-center text-xs text-white">
-              連結QR: {progress.done} / {progress.total} 枚目スキャン中
+          {/* スキャン中アニメーション */}
+          {!isComplete && !error && (
+            <div className="pointer-events-none absolute inset-0">
+              <div className="absolute left-1/2 top-1/2 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-lg border-2 border-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.5)]" />
+              <div className="absolute bottom-3 right-3 rounded-full bg-black/70 px-2 py-1 text-[10px] text-white">
+                スキャン中…
+              </div>
             </div>
           )}
         </div>
 
-        {error ? (
+        {error && (
           <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950 dark:text-red-300">
             {error}
           </p>
-        ) : (
-          <p className="text-xs text-zinc-500">{status}</p>
         )}
 
-        <p className="text-[10px] text-zinc-400">
-          車検証下部のQRコードを順番に映してください。連結QR(複数枚)・Shift_JIS対応済み
+        <p className="text-center text-[10px] text-zinc-400">
+          黄色の枠にQRを合わせると自動でスキャンされます
         </p>
       </div>
     </div>
@@ -205,9 +233,56 @@ export function QrScanModal({
 }
 
 /**
- * バイト列をテキストに復号。
- * 車検証は Shift_JIS が標準。失敗時は UTF-8 へfallback。
+ * 車検証の下部QRエリアを模した視覚ガイド。
+ * 読み取り済みのQRは緑チェック、次に読むQRは点滅。
  */
+function CertGuide({ done, total }: { done: number; total: number }) {
+  return (
+    <div className="rounded-md border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900">
+      <p className="mb-2 text-center text-[10px] text-zinc-500">
+        車検証（下部のQR配置イメージ）
+      </p>
+      <div className="mx-auto flex max-w-xs justify-between gap-1.5">
+        {Array.from({ length: total }).map((_, i) => {
+          const scanned = i < done
+          const current = i === done
+          return (
+            <div
+              key={i}
+              className={`flex flex-1 flex-col items-center gap-1 ${
+                current ? 'animate-pulse' : ''
+              }`}
+            >
+              <div
+                className={`flex aspect-square w-full items-center justify-center rounded border-2 text-base font-bold ${
+                  scanned
+                    ? 'border-green-500 bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
+                    : current
+                      ? 'border-blue-500 bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                      : 'border-zinc-300 bg-white text-zinc-400 dark:border-zinc-700 dark:bg-zinc-950'
+                }`}
+              >
+                {scanned ? '✓' : current ? '◉' : i + 1}
+              </div>
+              <p
+                className={`text-[9px] font-medium ${
+                  scanned
+                    ? 'text-green-700 dark:text-green-300'
+                    : current
+                      ? 'text-blue-700 dark:text-blue-300'
+                      : 'text-zinc-400'
+                }`}
+              >
+                {scanned ? '読込済' : current ? '次これ' : `${i + 1}枚目`}
+              </p>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function decodeBytes(bytes: Uint8Array): string {
   try {
     const text = new TextDecoder('shift_jis', { fatal: true }).decode(bytes)
@@ -221,17 +296,12 @@ function decodeBytes(bytes: Uint8Array): string {
   } catch {
     // try next
   }
-  // 最後の手段：iso-8859-1（loss less）
   return new TextDecoder('iso-8859-1').decode(bytes)
 }
 
-/**
- * QRデータをパースして候補フィールドを抽出。
- */
 function parseScanned(raw: string): Record<string, string> {
   const fields: Record<string, string> = { _raw: raw }
 
-  // 1. JSON
   try {
     const json = JSON.parse(raw)
     if (typeof json === 'object' && json) {
@@ -245,7 +315,6 @@ function parseScanned(raw: string): Record<string, string> {
     // not JSON
   }
 
-  // 2. 区切り文字つき (CSV/TSV/改行)
   const lines = raw.split(/[\r\n]/)
   for (const line of lines) {
     const m = line.match(/^\s*([^=:|]+)\s*[=:|]\s*(.+?)\s*$/)
@@ -258,7 +327,6 @@ function parseScanned(raw: string): Record<string, string> {
     }
   }
 
-  // 3. ナンバープレート（地名 + 数字 + ひらがな + 数字-数字）
   const plateMatch = raw.match(
     /([一-龥]{1,5})\s*(\d{2,3})\s*([あ-ん])\s*(\d{1,4}[\s-]?\d{1,4})/
   )
@@ -266,16 +334,11 @@ function parseScanned(raw: string): Record<string, string> {
     fields._plate_candidate = `${plateMatch[1]} ${plateMatch[2]} ${plateMatch[3]} ${plateMatch[4]}`
   }
 
-  // 4. 日付パターン（YYYY/MM/DD, YYYY-MM-DD, YYYY年MM月DD日, 令和X年Y月Z日）
   const reiwaMatch = raw.match(
     /令和\s*(\d{1,2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})/
   )
-  const heiseiMatch = raw.match(
-    /平成\s*(\d{1,2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})/
-  )
   const isoMatch = raw.match(/(20\d{2})[\-/年](\d{1,2})[\-/月](\d{1,2})/)
 
-  // 車検満了日は通常「令和XX年Y月Z日」で書かれる
   if (reiwaMatch) {
     const y = 2018 + parseInt(reiwaMatch[1], 10)
     fields._date_candidate = `${y}-${reiwaMatch[2].padStart(2, '0')}-${reiwaMatch[3].padStart(2, '0')}`
@@ -283,30 +346,20 @@ function parseScanned(raw: string): Record<string, string> {
     fields._date_candidate = `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`
   }
 
-  // 5. 初度登録年月（令和X年Y月）
-  const firstRegMatch =
-    raw.match(/令和\s*(\d{1,2})\s*年\s*(\d{1,2})\s*月/g) ||
-    raw.match(/平成\s*(\d{1,2})\s*年\s*(\d{1,2})\s*月/g)
+  const firstRegMatch = raw.match(/令和\s*(\d{1,2})\s*年\s*(\d{1,2})\s*月/g)
   if (firstRegMatch && firstRegMatch.length > 0) {
-    // ヒットした最初のものを初度登録候補に
     const first = firstRegMatch[0]
-    const m =
-      first.match(/令和\s*(\d{1,2})\s*年\s*(\d{1,2})/) ||
-      first.match(/平成\s*(\d{1,2})\s*年\s*(\d{1,2})/)
+    const m = first.match(/令和\s*(\d{1,2})\s*年\s*(\d{1,2})/)
     if (m) {
-      const era = first.startsWith('令和') ? 2018 : 1988
-      const y = era + parseInt(m[1], 10)
+      const y = 2018 + parseInt(m[1], 10)
       fields._first_reg_candidate = `${y}-${m[2].padStart(2, '0')}`
     }
   }
 
-  // 6. 車台番号（英数字 + ハイフン + 数字）
   const vinMatch = raw.match(/\b([A-HJ-NPR-Z0-9]{4,8}[-][0-9]{4,10})\b/)
   if (vinMatch) {
     fields._vin_candidate = vinMatch[1]
   }
-  // 平成は使われない可能性が高いが、平成派生の年号変換
-  void heiseiMatch
 
   return fields
 }
