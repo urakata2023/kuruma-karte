@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { processVehiclePhoto } from '@/lib/image-process'
+import { QrScanModal, type QRScanResult } from '@/components/qr-scan-modal'
 
 type State = { error?: string } | undefined
 type ActionFn = (prev: State, formData: FormData) => Promise<State>
@@ -19,6 +20,44 @@ export function PublicRegistrationForm({
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const [photoError, setPhotoError] = useState<string | null>(null)
+
+  // QRスキャン
+  const [qrOpen, setQrOpen] = useState(false)
+  const [qrNotice, setQrNotice] = useState<string | null>(null)
+
+  function handleQrScan(result: QRScanResult) {
+    const fields = result.parsedFields
+    const applied: string[] = []
+
+    function setValue(name: string, value: string, label: string) {
+      const el = document.getElementsByName(name)[0] as
+        | HTMLInputElement
+        | undefined
+      if (el) {
+        el.value = value
+        el.dispatchEvent(new Event('input', { bubbles: true }))
+        applied.push(`${label}: ${value}`)
+      }
+    }
+
+    if (fields._plate_candidate) {
+      setValue('plate_number', fields._plate_candidate, 'ナンバー')
+    }
+    if (fields._date_candidate) {
+      setValue('inspection_expires_on', fields._date_candidate, '車検満了日')
+    }
+    if (fields.model) setValue('model', fields.model, '車種')
+
+    setQrOpen(false)
+    if (applied.length === 0) {
+      setQrNotice(
+        `QRからは自動入力できる項目が見つかりませんでした。お手数ですが下の欄に手入力してください。`
+      )
+    } else {
+      setQrNotice(`✓ 自動入力しました：${applied.join(' / ')}`)
+    }
+    setTimeout(() => setQrNotice(null), 8000)
+  }
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -80,6 +119,36 @@ export function PublicRegistrationForm({
 
       <fieldset className="space-y-4 border-t border-zinc-200 pt-5 dark:border-zinc-800">
         <legend className="text-base font-semibold">愛車の情報</legend>
+
+        {/* 車検証QRから自動入力 */}
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950">
+          <button
+            type="button"
+            onClick={() => setQrOpen(true)}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <span className="flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-200">
+              📸 車検証QRから自動入力
+            </span>
+            <span className="text-xs text-blue-700 dark:text-blue-300">
+              タップして起動 →
+            </span>
+          </button>
+          <p className="mt-1 text-xs text-blue-700 dark:text-blue-300">
+            車検証のQRコードを読み取ると、ナンバーと車検満了日を自動で入れます
+          </p>
+          {qrNotice && (
+            <p className="mt-2 rounded-md bg-white px-3 py-2 text-xs text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
+              {qrNotice}
+            </p>
+          )}
+        </div>
+
+        <QrScanModal
+          open={qrOpen}
+          onClose={() => setQrOpen(false)}
+          onScan={handleQrScan}
+        />
 
         <div className="space-y-2">
           <label className="block text-sm font-medium">
