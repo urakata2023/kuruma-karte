@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f4f4f5"/>
+      <stop offset="100%" stop-color="#d4d4d8"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" fill="url(#bg)"/>
+  <g transform="translate(200 160)" fill="#a1a1aa" stroke="#71717a" stroke-width="3" stroke-linejoin="round">
+    <!-- 車体 -->
+    <path d="M-110 25 L-110 -15 L-70 -55 L70 -55 L110 -15 L110 25 Z"/>
+    <!-- 窓 -->
+    <path d="M-60 -50 L-30 -20 L30 -20 L60 -50 Z" fill="#71717a" stroke="none"/>
+    <!-- タイヤ -->
+    <circle cx="-65" cy="25" r="22" fill="#27272a" stroke="none"/>
+    <circle cx="65" cy="25" r="22" fill="#27272a" stroke="none"/>
+    <circle cx="-65" cy="25" r="8" fill="#71717a" stroke="none"/>
+    <circle cx="65" cy="25" r="8" fill="#71717a" stroke="none"/>
+    <!-- ヘッドライト -->
+    <circle cx="-95" cy="0" r="6" fill="#fef3c7" stroke="none"/>
+    <circle cx="95" cy="0" r="6" fill="#fef3c7" stroke="none"/>
+  </g>
+  <text x="200" y="255" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="14" fill="#71717a" text-anchor="middle" letter-spacing="3">PHOTO COMING SOON</text>
+</svg>

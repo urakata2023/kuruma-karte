@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useState } from 'react'
+import imageCompression from 'browser-image-compression'
 
 type State = { error?: string } | undefined
 type ActionFn = (prev: State, formData: FormData) => Promise<State>
@@ -14,13 +15,34 @@ export function PublicRegistrationForm({
 }) {
   const [state, formAction, pending] = useActionState(action, undefined)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [compressing, setCompressing] = useState(false)
 
-  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (file) {
-      setPhotoPreview(URL.createObjectURL(file))
-    } else {
+    if (!file) {
       setPhotoPreview(null)
+      return
+    }
+
+    setCompressing(true)
+    try {
+      const compressed = await imageCompression(file, {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+      })
+      // input.files を圧縮版に差し替え（送信時に圧縮版が送られる）
+      const dt = new DataTransfer()
+      dt.items.add(
+        new File([compressed], compressed.name, { type: compressed.type })
+      )
+      e.target.files = dt.files
+      setPhotoPreview(URL.createObjectURL(compressed))
+    } catch (err) {
+      console.error('画像圧縮失敗、元画像を使用します:', err)
+      setPhotoPreview(URL.createObjectURL(file))
+    } finally {
+      setCompressing(false)
     }
   }
 
@@ -53,40 +75,46 @@ export function PublicRegistrationForm({
       <fieldset className="space-y-4 border-t border-zinc-200 pt-5 dark:border-zinc-800">
         <legend className="text-base font-semibold">愛車の情報</legend>
 
-        {/* 愛車の写真アップロード */}
+        {/* 愛車の写真（任意） */}
         <div className="space-y-2">
           <label className="block text-sm font-medium">
             愛車の写真
             <span className="ml-2 text-xs font-normal text-zinc-500">
-              （あとから変更できます）
+              （任意・後から追加可能）
             </span>
           </label>
-          {photoPreview ? (
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900">
+            {photoPreview ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={photoPreview}
                 alt="愛車プレビュー"
                 className="h-full w-full object-cover"
               />
-            </div>
-          ) : (
-            <div className="flex aspect-[4/3] w-full items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
-              <div className="text-center text-zinc-400">
-                <p className="text-4xl">🚗</p>
-                <p className="mt-1 text-xs">下のボタンから写真を選択</p>
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src="/default-vehicle.svg"
+                alt="愛車（写真未登録）"
+                className="h-full w-full object-cover"
+              />
+            )}
+            {compressing && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-sm text-white">
+                画像を準備中…
               </div>
-            </div>
-          )}
+            )}
+          </div>
           <input
             type="file"
             name="photo"
             accept="image/*"
             onChange={handlePhotoChange}
-            className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-zinc-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-zinc-800 dark:file:bg-white dark:file:text-black"
+            disabled={compressing}
+            className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-zinc-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-zinc-800 disabled:opacity-50 dark:file:bg-white dark:file:text-black"
           />
           <p className="text-xs text-zinc-500">
-            ※ 任意。お客様用マイページに表示されます
+            ※ 写真は自動で圧縮されます。スマホで撮ったままで大丈夫です
           </p>
         </div>
 
@@ -116,7 +144,7 @@ export function PublicRegistrationForm({
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || compressing}
         className="w-full rounded-md bg-zinc-900 px-4 py-3 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
       >
         {pending ? '登録中…' : `${shopName}に登録する`}

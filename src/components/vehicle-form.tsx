@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import Image from 'next/image'
+import imageCompression from 'browser-image-compression'
 import type { Vehicle } from '@/lib/types'
 
 type State = { error?: string } | undefined
@@ -20,30 +20,53 @@ export function VehicleForm({
   const [photoPreview, setPhotoPreview] = useState<string | null>(
     vehicle?.photo_url ?? null
   )
+  const [compressing, setCompressing] = useState(false)
 
-  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (file) {
+    if (!file) return
+
+    setCompressing(true)
+    try {
+      const compressed = await imageCompression(file, {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+      })
+      const dt = new DataTransfer()
+      dt.items.add(
+        new File([compressed], compressed.name, { type: compressed.type })
+      )
+      e.target.files = dt.files
+      setPhotoPreview(URL.createObjectURL(compressed))
+    } catch (err) {
+      console.error('画像圧縮失敗、元画像を使用します:', err)
       setPhotoPreview(URL.createObjectURL(file))
+    } finally {
+      setCompressing(false)
     }
   }
 
   return (
     <form action={formAction} className="space-y-4" encType="multipart/form-data">
       <div className="space-y-2">
-        <label className="block text-sm font-medium">愛車の写真</label>
+        <label className="block text-sm font-medium">
+          愛車の写真
+          <span className="ml-2 text-xs font-normal text-zinc-500">
+            （任意）
+          </span>
+        </label>
         <div className="flex items-center gap-4">
           <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
-            {photoPreview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={photoPreview}
-                alt="愛車プレビュー"
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-xs text-zinc-400">
-                プレビュー
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photoPreview ?? '/default-vehicle.svg'}
+              alt="愛車"
+              className="h-full w-full object-cover"
+            />
+            {compressing && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-[10px] text-white">
+                処理中
               </div>
             )}
           </div>
@@ -53,10 +76,11 @@ export function VehicleForm({
               name="photo"
               accept="image/*"
               onChange={handlePhotoChange}
-              className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-zinc-900 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-zinc-800 dark:file:bg-white dark:file:text-black"
+              disabled={compressing}
+              className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-zinc-900 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-zinc-800 disabled:opacity-50 dark:file:bg-white dark:file:text-black"
             />
             <p className="mt-1 text-xs text-zinc-500">
-              JPEG / PNG など。お客様向けマイページのトップに大きく表示されます。
+              自動で1MB以下に圧縮されます。お客様向けマイページのトップに表示。
             </p>
           </div>
         </div>
@@ -108,7 +132,7 @@ export function VehicleForm({
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || compressing}
         className="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
       >
         {pending ? '保存中…' : submitLabel}

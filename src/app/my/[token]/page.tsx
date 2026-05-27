@@ -55,21 +55,12 @@ export default async function OwnerMyPage({
       <section className="relative bg-gradient-to-br from-zinc-100 to-zinc-300 dark:from-zinc-800 dark:to-zinc-950">
         <div className="mx-auto max-w-2xl px-6 py-12">
           <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl">
-            {vehicle.photo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={vehicle.photo_url}
-                alt={vehicle.model ?? '愛車'}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-zinc-200 text-zinc-400 dark:bg-zinc-900">
-                <div className="text-center">
-                  <p className="text-5xl">🚗</p>
-                  <p className="mt-2 text-sm">写真未登録</p>
-                </div>
-              </div>
-            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={vehicle.photo_url ?? '/default-vehicle.svg'}
+              alt={vehicle.model ?? '愛車'}
+              className="h-full w-full object-cover"
+            />
           </div>
           <div className="mt-6 text-center">
             <h1 className="text-2xl font-semibold tracking-tight">
