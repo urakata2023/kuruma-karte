@@ -2,7 +2,10 @@
 
 import { useActionState, useState } from 'react'
 import { processVehiclePhoto } from '@/lib/image-process'
-import { QrScanModal, type QRScanResult } from '@/components/qr-scan-modal'
+import {
+  CertPhotoModal,
+  type CertOcrFields,
+} from '@/components/cert-photo-modal'
 import type { Vehicle } from '@/lib/types'
 
 type State = { error?: string } | undefined
@@ -26,12 +29,11 @@ export function VehicleForm({
   const [processing, setProcessing] = useState(false)
   const [photoError, setPhotoError] = useState<string | null>(null)
 
-  // QR読み取り
-  const [qrOpen, setQrOpen] = useState(false)
-  const [qrNotice, setQrNotice] = useState<string | null>(null)
+  // 車検証写真OCR (Claude Vision)
+  const [ocrOpen, setOcrOpen] = useState(false)
+  const [ocrNotice, setOcrNotice] = useState<string | null>(null)
 
-  function handleQrScan(result: QRScanResult) {
-    const fields = result.parsedFields
+  function handleOcrComplete(fields: CertOcrFields) {
     const applied: string[] = []
 
     /**
@@ -48,32 +50,34 @@ export function VehicleForm({
       }
     }
 
-    // 候補があれば反映
-    if (fields._plate_candidate) {
-      setValue('plate_number', fields._plate_candidate, 'ナンバー')
+    if (fields.model) setValue('model', fields.model, '車種')
+    if (fields.plate_number) {
+      setValue('plate_number', fields.plate_number, 'ナンバー')
     }
-    if (fields._date_candidate) {
-      setValue('inspection_expires_on', fields._date_candidate, '車検満了日')
+    if (fields.inspection_expires_on) {
+      setValue(
+        'inspection_expires_on',
+        fields.inspection_expires_on,
+        '車検満了日'
+      )
     }
-    if (fields._first_reg_candidate) {
+    if (fields.first_registration_ym) {
       setValue(
         'first_registration_ym',
-        fields._first_reg_candidate,
+        fields.first_registration_ym,
         '初度登録'
       )
     }
-    // 完全一致するkeyがあればそのまま (将来の独自仕様対応)
-    if (fields.model) setValue('model', fields.model, '車種')
 
-    setQrOpen(false)
+    setOcrOpen(false)
     if (applied.length === 0) {
-      setQrNotice(
-        `QRから自動入力できる項目が見つかりませんでした。読み取り内容: ${result.raw.slice(0, 80)}${result.raw.length > 80 ? '...' : ''}`
+      setOcrNotice(
+        '写真から自動入力できる項目が見つかりませんでした。手入力でお願いします。'
       )
     } else {
-      setQrNotice(`✓ 自動入力しました: ${applied.join(' / ')}`)
+      setOcrNotice(`✓ AIが自動入力しました: ${applied.join(' / ')}`)
     }
-    setTimeout(() => setQrNotice(null), 8000)
+    setTimeout(() => setOcrNotice(null), 8000)
   }
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -111,32 +115,34 @@ export function VehicleForm({
 
   return (
     <form action={formAction} className="space-y-4">
-      {/* 車検証QRから一発入力 */}
+      {/* 車検証写真OCR (Claude Vision) */}
       <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950">
         <button
           type="button"
-          onClick={() => setQrOpen(true)}
+          onClick={() => setOcrOpen(true)}
           className="flex w-full items-center justify-between text-left"
         >
           <span className="flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-200">
-            📸 車検証QRコードから自動入力
+            🪄 車検証の写真で自動入力（AI読み取り）
           </span>
-          <span className="text-xs text-blue-700 dark:text-blue-300">タップして起動 →</span>
+          <span className="text-xs text-blue-700 dark:text-blue-300">
+            タップして撮影 →
+          </span>
         </button>
         <p className="mt-1 text-xs text-blue-700 dark:text-blue-300">
-          車検証券面のQRコードを読み取ると、ナンバー・車検満了日・初度登録を自動入力します
+          車検証全体を1枚撮影するだけで、ナンバー・車検満了日・初度登録・車種をAIが自動入力します
         </p>
-        {qrNotice && (
+        {ocrNotice && (
           <p className="mt-2 rounded-md bg-white px-3 py-2 text-xs text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
-            {qrNotice}
+            {ocrNotice}
           </p>
         )}
       </div>
 
-      <QrScanModal
-        open={qrOpen}
-        onClose={() => setQrOpen(false)}
-        onScan={handleQrScan}
+      <CertPhotoModal
+        open={ocrOpen}
+        onClose={() => setOcrOpen(false)}
+        onComplete={handleOcrComplete}
       />
 
       <div className="space-y-2">

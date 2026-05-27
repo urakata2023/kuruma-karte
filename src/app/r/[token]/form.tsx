@@ -2,7 +2,10 @@
 
 import { useActionState, useState } from 'react'
 import { processVehiclePhoto } from '@/lib/image-process'
-import { QrScanModal, type QRScanResult } from '@/components/qr-scan-modal'
+import {
+  CertPhotoModal,
+  type CertOcrFields,
+} from '@/components/cert-photo-modal'
 
 type State = { error?: string } | undefined
 type ActionFn = (prev: State, formData: FormData) => Promise<State>
@@ -21,12 +24,11 @@ export function PublicRegistrationForm({
   const [processing, setProcessing] = useState(false)
   const [photoError, setPhotoError] = useState<string | null>(null)
 
-  // QRスキャン
-  const [qrOpen, setQrOpen] = useState(false)
-  const [qrNotice, setQrNotice] = useState<string | null>(null)
+  // 車検証写真OCR
+  const [ocrOpen, setOcrOpen] = useState(false)
+  const [ocrNotice, setOcrNotice] = useState<string | null>(null)
 
-  function handleQrScan(result: QRScanResult) {
-    const fields = result.parsedFields
+  function handleOcrComplete(fields: CertOcrFields) {
     const applied: string[] = []
 
     function setValue(name: string, value: string, label: string) {
@@ -40,23 +42,27 @@ export function PublicRegistrationForm({
       }
     }
 
-    if (fields._plate_candidate) {
-      setValue('plate_number', fields._plate_candidate, 'ナンバー')
-    }
-    if (fields._date_candidate) {
-      setValue('inspection_expires_on', fields._date_candidate, '車検満了日')
-    }
     if (fields.model) setValue('model', fields.model, '車種')
+    if (fields.plate_number) {
+      setValue('plate_number', fields.plate_number, 'ナンバー')
+    }
+    if (fields.inspection_expires_on) {
+      setValue(
+        'inspection_expires_on',
+        fields.inspection_expires_on,
+        '車検満了日'
+      )
+    }
 
-    setQrOpen(false)
+    setOcrOpen(false)
     if (applied.length === 0) {
-      setQrNotice(
-        `QRからは自動入力できる項目が見つかりませんでした。お手数ですが下の欄に手入力してください。`
+      setOcrNotice(
+        '写真からは自動入力できる項目が見つかりませんでした。お手数ですが下の欄に手入力してください。'
       )
     } else {
-      setQrNotice(`✓ 自動入力しました：${applied.join(' / ')}`)
+      setOcrNotice(`✓ AIが自動入力しました：${applied.join(' / ')}`)
     }
-    setTimeout(() => setQrNotice(null), 8000)
+    setTimeout(() => setOcrNotice(null), 8000)
   }
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -120,34 +126,34 @@ export function PublicRegistrationForm({
       <fieldset className="space-y-4 border-t border-zinc-200 pt-5 dark:border-zinc-800">
         <legend className="text-base font-semibold">愛車の情報</legend>
 
-        {/* 車検証QRから自動入力 */}
+        {/* 車検証写真OCR (Claude Vision) */}
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950">
           <button
             type="button"
-            onClick={() => setQrOpen(true)}
+            onClick={() => setOcrOpen(true)}
             className="flex w-full items-center justify-between text-left"
           >
             <span className="flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-200">
-              📸 車検証QRから自動入力
+              🪄 車検証の写真で自動入力（AI読み取り）
             </span>
             <span className="text-xs text-blue-700 dark:text-blue-300">
-              タップして起動 →
+              タップして撮影 →
             </span>
           </button>
           <p className="mt-1 text-xs text-blue-700 dark:text-blue-300">
-            車検証のQRコードを読み取ると、ナンバーと車検満了日を自動で入れます
+            車検証を1枚撮影するだけで、ナンバー・車検満了日・車種をAIが読み取って自動入力します
           </p>
-          {qrNotice && (
+          {ocrNotice && (
             <p className="mt-2 rounded-md bg-white px-3 py-2 text-xs text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
-              {qrNotice}
+              {ocrNotice}
             </p>
           )}
         </div>
 
-        <QrScanModal
-          open={qrOpen}
-          onClose={() => setQrOpen(false)}
-          onScan={handleQrScan}
+        <CertPhotoModal
+          open={ocrOpen}
+          onClose={() => setOcrOpen(false)}
+          onComplete={handleOcrComplete}
         />
 
         <div className="space-y-2">
