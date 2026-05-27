@@ -1,22 +1,112 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
-:root {
+/* ───────────────────────────────────────────────────────
+ * 店舗テーマ (Phase 10)
+ * html要素に data-theme="xxx" を付けると配色が切り替わる。
+ * 各コンポーネントは bg-theme-primary, text-theme-accent 等の
+ * Tailwind 任意値クラスから var(--theme-*) を参照する。
+ * ─────────────────────────────────────────────────────── */
+
+/* デフォルト (Karte Default) */
+:root,
+:root[data-theme="default"] {
   --background: #ffffff;
   --foreground: #171717;
+  --theme-primary: #18181b;          /* メインのCTA/ボタン色 */
+  --theme-primary-fg: #ffffff;       /* primary上の文字 */
+  --theme-accent: #2563eb;           /* アクセント (ハイライト・ALWAYS WITH YOU等) */
+  --theme-accent-fg: #ffffff;
+  --theme-surface: #fafafa;          /* カード背景 */
+  --theme-surface-border: #e4e4e7;
+  --theme-hero-overlay: rgba(0, 0, 0, 0.4);
+}
+
+/* Rosso (赤×黒・イタリアンスポーツ) */
+[data-theme="rosso"] {
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+  --theme-primary: #dc1a1a;
+  --theme-primary-fg: #ffffff;
+  --theme-accent: #f1c557;
+  --theme-accent-fg: #0a0a0a;
+  --theme-surface: #1a1a1a;
+  --theme-surface-border: #2a2a2a;
+  --theme-hero-overlay: rgba(220, 26, 26, 0.35);
+}
+
+/* Heritage Gold (クリーム×ボルドー×ゴールド) */
+[data-theme="heritage-gold"] {
+  --background: #f7f1e3;
+  --foreground: #2a1a0e;
+  --theme-primary: #7a1f1f;
+  --theme-primary-fg: #f7f1e3;
+  --theme-accent: #c79a3a;
+  --theme-accent-fg: #2a1a0e;
+  --theme-surface: #ffffff;
+  --theme-surface-border: #e0d5b8;
+  --theme-hero-overlay: rgba(122, 31, 31, 0.35);
+}
+
+/* Bavarian Blue (白×青の機能美) */
+[data-theme="bavarian-blue"] {
+  --background: #ffffff;
+  --foreground: #0f1f33;
+  --theme-primary: #0a4ea3;
+  --theme-primary-fg: #ffffff;
+  --theme-accent: #1c79e0;
+  --theme-accent-fg: #ffffff;
+  --theme-surface: #f4f7fb;
+  --theme-surface-border: #d8e2f0;
+  --theme-hero-overlay: rgba(10, 78, 163, 0.4);
+}
+
+/* Premium Black (漆黒×シャンパンゴールド) */
+[data-theme="premium-black"] {
+  --background: #0f0f0f;
+  --foreground: #f5f0e3;
+  --theme-primary: #0a0a0a;
+  --theme-primary-fg: #c9a86a;
+  --theme-accent: #c9a86a;
+  --theme-accent-fg: #0a0a0a;
+  --theme-surface: #1a1a1a;
+  --theme-surface-border: #2d2620;
+  --theme-hero-overlay: rgba(0, 0, 0, 0.55);
+}
+
+/* Silver Star (シルバー×紺の格式) */
+[data-theme="silver-star"] {
+  --background: #f4f6f9;
+  --foreground: #0c1a2b;
+  --theme-primary: #0c1a2b;
+  --theme-primary-fg: #f4f6f9;
+  --theme-accent: #7d8b9c;
+  --theme-accent-fg: #ffffff;
+  --theme-surface: #ffffff;
+  --theme-surface-border: #d6dde6;
+  --theme-hero-overlay: rgba(12, 26, 43, 0.45);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-theme-primary: var(--theme-primary);
+  --color-theme-primary-fg: var(--theme-primary-fg);
+  --color-theme-accent: var(--theme-accent);
+  --color-theme-accent-fg: var(--theme-accent-fg);
+  --color-theme-surface: var(--theme-surface);
+  --color-theme-surface-border: var(--theme-surface-border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]),
+  :root[data-theme="default"] {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --theme-surface: #1a1a1a;
+    --theme-surface-border: #2a2a2a;
   }
 }
 
@@ -25,3 +115,10 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* テーマ適用 wrapper: data-theme要素自体にも背景色を伝播させる */
+[data-theme]:not(:root) {
+  background: var(--background);
+  color: var(--foreground);
+}
+

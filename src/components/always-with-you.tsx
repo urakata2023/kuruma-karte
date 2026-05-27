@@ -22,22 +22,48 @@ export function AlwaysWithYou({ startIso }: { startIso: string }) {
 
   return (
     <section className="mx-auto w-full max-w-2xl px-6 pt-6">
-      <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black p-8 text-center text-zinc-100 shadow-xl">
+      <div
+        className="relative overflow-hidden rounded-2xl border p-8 text-center shadow-xl"
+        style={{
+          // テーマ駆動: primary背景 + accent影響のグラデーション
+          background:
+            'linear-gradient(135deg, var(--theme-primary) 0%, color-mix(in srgb, var(--theme-primary) 80%, black) 100%)',
+          color: 'var(--theme-primary-fg)',
+          borderColor:
+            'color-mix(in srgb, var(--theme-primary-fg) 20%, transparent)',
+        }}
+      >
         {/* デコ：上下のドットライン */}
-        <div className="absolute inset-x-6 top-3 flex justify-between text-[6px] text-zinc-700">
+        <div
+          className="absolute inset-x-6 top-3 flex justify-between text-[6px]"
+          style={{
+            color:
+              'color-mix(in srgb, var(--theme-primary-fg) 30%, transparent)',
+          }}
+        >
           {Array.from({ length: 40 }).map((_, i) => (
             <span key={i}>●</span>
           ))}
         </div>
-        <div className="absolute inset-x-6 bottom-3 flex justify-between text-[6px] text-zinc-700">
+        <div
+          className="absolute inset-x-6 bottom-3 flex justify-between text-[6px]"
+          style={{
+            color:
+              'color-mix(in srgb, var(--theme-primary-fg) 30%, transparent)',
+          }}
+        >
           {Array.from({ length: 40 }).map((_, i) => (
             <span key={i}>●</span>
           ))}
         </div>
 
         <p
-          className="text-xs uppercase tracking-[0.5em] text-zinc-400"
-          style={{ fontFamily: 'var(--font-display), sans-serif' }}
+          className="text-xs uppercase tracking-[0.5em]"
+          style={{
+            fontFamily: 'var(--font-display), sans-serif',
+            color:
+              'color-mix(in srgb, var(--theme-primary-fg) 70%, transparent)',
+          }}
         >
           Always with you
         </p>
@@ -47,14 +73,19 @@ export function AlwaysWithYou({ startIso }: { startIso: string }) {
           style={{
             fontFamily: 'var(--font-display), sans-serif',
             fontVariantNumeric: 'tabular-nums',
+            color: 'var(--theme-accent)',
           }}
         >
           {now ? <Counter from={from} to={now} /> : <Placeholder />}
         </p>
 
         <p
-          className="mt-5 text-[11px] uppercase tracking-[0.3em] text-zinc-500"
-          style={{ fontFamily: 'var(--font-display), sans-serif' }}
+          className="mt-5 text-[11px] uppercase tracking-[0.3em]"
+          style={{
+            fontFamily: 'var(--font-display), sans-serif',
+            color:
+              'color-mix(in srgb, var(--theme-primary-fg) 60%, transparent)',
+          }}
         >
           Keep on rolling.
         </p>
@@ -90,7 +121,15 @@ function Pad2({ n }: { n: number }) {
 }
 
 function Unit({ children }: { children: React.ReactNode }) {
-  return <span className="text-zinc-400">{children}</span>
+  return (
+    <span
+      style={{
+        color: 'color-mix(in srgb, var(--theme-accent) 60%, transparent)',
+      }}
+    >
+      {children}
+    </span>
+  )
 }
 
 function Placeholder() {

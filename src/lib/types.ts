@@ -11,6 +11,7 @@ export type Shop = {
   stripe_customer_id: string | null
   line_channel_token: string | null
   registration_token: string
+  theme: string // ThemeId (Phase 10) — マイページ/管理画面のカラーリング
   created_at: string
   updated_at: string
 }
