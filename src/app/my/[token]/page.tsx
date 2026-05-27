@@ -1,11 +1,71 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import { MaintenanceTimeline } from '@/components/maintenance-timeline'
-import type { Vehicle, MaintenanceRecord } from '@/lib/types'
+import { MileageChart } from '@/components/mileage-chart'
+import { VehicleGallery } from '@/components/vehicle-gallery'
+import { ShareButton } from '@/components/share-button'
+import {
+  calcOwnershipDays,
+  calcMonthlyAverageKm,
+  extractMileagePoints,
+  fmtNum,
+} from '@/lib/vehicle-stats'
+import type {
+  Vehicle,
+  MaintenanceRecord,
+  VehiclePhoto,
+} from '@/lib/types'
 
 type CustomerLite = { name: string }
 type ShopLite = { name: string; phone: string | null }
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ token: string }>
+}): Promise<Metadata> {
+  const { token } = await params
+  const admin = createAdminClient()
+  const { data: vehicle } = await admin
+    .from('vehicles')
+    .select('model, plate_number, customer_id, shop_id')
+    .eq('view_token', token)
+    .maybeSingle()
+  if (!vehicle) return { title: 'くるまカルテ' }
+
+  const [customerR, shopR] = await Promise.all([
+    admin
+      .from('customers')
+      .select('name')
+      .eq('id', vehicle.customer_id)
+      .maybeSingle<CustomerLite>(),
+    admin
+      .from('shops')
+      .select('name')
+      .eq('id', vehicle.shop_id)
+      .maybeSingle<ShopLite>(),
+  ])
+
+  const title = `${customerR.data?.name ?? 'お客様'} さんの ${vehicle.model ?? 'お車'}`
+  const description = `${shopR.data?.name ?? '車屋'}に登録された愛車のマイページ。車検・整備の記録をいつでも手元に。`
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
+  }
+}
 
 export default async function OwnerMyPage({
   params,
@@ -23,31 +83,57 @@ export default async function OwnerMyPage({
 
   if (!vehicle) notFound()
 
-  const [{ data: customer }, { data: shop }, { data: recordsData }] =
-    await Promise.all([
-      admin
-        .from('customers')
-        .select('name')
-        .eq('id', vehicle.customer_id)
-        .maybeSingle<CustomerLite>(),
-      admin
-        .from('shops')
-        .select('name, phone')
-        .eq('id', vehicle.shop_id)
-        .maybeSingle<ShopLite>(),
-      admin
-        .from('maintenance_records')
-        .select('*')
-        .eq('vehicle_id', vehicle.id)
-        .order('performed_on', { ascending: false }),
-    ])
+  const [
+    { data: customer },
+    { data: shop },
+    { data: recordsData },
+    { data: photosData },
+  ] = await Promise.all([
+    admin
+      .from('customers')
+      .select('name')
+      .eq('id', vehicle.customer_id)
+      .maybeSingle<CustomerLite>(),
+    admin
+      .from('shops')
+      .select('name, phone')
+      .eq('id', vehicle.shop_id)
+      .maybeSingle<ShopLite>(),
+    admin
+      .from('maintenance_records')
+      .select('*')
+      .eq('vehicle_id', vehicle.id)
+      .order('performed_on', { ascending: false })
+      .order('created_at', { ascending: false }),
+    admin
+      .from('vehicle_photos')
+      .select('*')
+      .eq('vehicle_id', vehicle.id)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true }),
+  ])
 
   const records = (recordsData ?? []) as MaintenanceRecord[]
-  const latestMileage = records.find((r) => r.mileage_km != null)?.mileage_km
+  const photos = (photosData ?? []) as VehiclePhoto[]
+
+  // A: 統計データ
+  const mileagePoints = extractMileagePoints(records)
+  const latestMileage =
+    mileagePoints.length > 0
+      ? mileagePoints[mileagePoints.length - 1].km
+      : null
+  const monthlyAverageKm = calcMonthlyAverageKm(mileagePoints)
+  const ownershipDays = calcOwnershipDays(vehicle)
 
   const daysToInspection = vehicle.inspection_expires_on
     ? daysUntil(vehicle.inspection_expires_on)
     : null
+
+  // C: シェアURL（NEXT_PUBLIC_APP_URL or 現状のホスト推定）
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? 'https://kuruma-karte.vercel.app'
+  const shareUrl = `${appUrl}/my/${token}`
+  const shareTitle = `${customer?.name ?? 'わたし'} の ${vehicle.model ?? '愛車'}`
 
   return (
     <div className="flex flex-1 flex-col">
@@ -60,7 +146,11 @@ export default async function OwnerMyPage({
               {customer?.name ?? 'お客様'} 様
             </p>
           </div>
-          <p className="text-xs text-zinc-400">愛車のマイページ</p>
+          <ShareButton
+            url={shareUrl}
+            title={shareTitle}
+            text={`${shareTitle}のマイページ`}
+          />
         </div>
       </header>
 
@@ -88,61 +178,75 @@ export default async function OwnerMyPage({
         </div>
       </section>
 
-      {/* 次回車検カウントダウン + 最新走行距離 */}
+      {/* ギャラリー（複数枚） */}
+      <VehicleGallery photos={photos} heroPhotoUrl={vehicle.photo_url} />
+
+      {/* 統計カード（A: 愛車との時間 / 走行距離 / 月平均） */}
       <section className="mx-auto w-full max-w-2xl px-6 pt-6">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {daysToInspection !== null && (
-            <div
-              className={`rounded-xl border p-5 text-center ${
+            <StatCard
+              label="次回車検まで"
+              value={
                 daysToInspection < 0
-                  ? 'border-red-300 bg-red-50 dark:border-red-900 dark:bg-red-950'
+                  ? `${Math.abs(daysToInspection)}日`
+                  : `あと${daysToInspection}日`
+              }
+              tone={
+                daysToInspection < 0
+                  ? 'danger'
                   : daysToInspection <= 90
-                  ? 'border-orange-300 bg-orange-50 dark:border-orange-900 dark:bg-orange-950'
-                  : 'border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black'
-              }`}
-            >
-              <p className="text-xs uppercase tracking-wide text-zinc-500">
-                次回車検まで
-              </p>
-              <p className="mt-1 text-3xl font-bold">
-                {daysToInspection < 0
-                  ? `${Math.abs(daysToInspection)}日 経過`
-                  : `あと ${daysToInspection} 日`}
-              </p>
-              <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-                {formatDateJP(vehicle.inspection_expires_on!)}
-              </p>
-            </div>
+                  ? 'warn'
+                  : 'normal'
+              }
+            />
+          )}
+          {ownershipDays != null && (
+            <StatCard
+              label="愛車との時間"
+              value={`${fmtNum(ownershipDays)}日`}
+            />
           )}
           {latestMileage != null && (
-            <div className="rounded-xl border border-zinc-200 bg-white p-5 text-center dark:border-zinc-800 dark:bg-black">
-              <p className="text-xs uppercase tracking-wide text-zinc-500">
-                最新走行距離
-              </p>
-              <p className="mt-1 text-3xl font-bold">
-                {latestMileage.toLocaleString()}
-                <span className="ml-1 text-base font-normal">km</span>
-              </p>
-              <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-                最終整備時の記録
-              </p>
-            </div>
+            <StatCard
+              label="最新走行距離"
+              value={`${fmtNum(latestMileage)} km`}
+            />
+          )}
+          {monthlyAverageKm != null && (
+            <StatCard
+              label="月平均走行"
+              value={`${fmtNum(monthlyAverageKm)} km`}
+            />
           )}
         </div>
       </section>
+
+      {/* 走行距離グラフ */}
+      {mileagePoints.length >= 2 && (
+        <section className="mx-auto w-full max-w-2xl px-6 pt-6">
+          <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-black">
+            <h2 className="mb-3 text-base font-semibold">走行距離の推移</h2>
+            <MileageChart points={mileagePoints} />
+            <p className="mt-2 text-xs text-zinc-500">
+              整備記録に登録された走行距離をもとに表示しています
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* 車両情報 */}
       <section className="mx-auto w-full max-w-2xl px-6 py-6">
         <h2 className="mb-4 text-base font-semibold">お車の記録</h2>
         <div className="grid grid-cols-2 gap-3">
-          <Stat label="初度登録" value={vehicle.first_registration_ym ?? '—'} />
-          <Stat
+          <Info label="初度登録" value={vehicle.first_registration_ym ?? '—'} />
+          <Info
             label="購入日"
             value={
               vehicle.purchased_on ? formatDateJP(vehicle.purchased_on) : '—'
             }
           />
-          <Stat
+          <Info
             label="前回オイル交換"
             value={
               vehicle.last_oil_change_on
@@ -150,7 +254,7 @@ export default async function OwnerMyPage({
                 : '—'
             }
           />
-          <Stat
+          <Info
             label="車検満了日"
             value={
               vehicle.inspection_expires_on
@@ -172,7 +276,6 @@ export default async function OwnerMyPage({
             ＋ 自分でメモを追加
           </Link>
         </div>
-
         <MaintenanceTimeline records={records} token={token} />
       </section>
 
@@ -202,7 +305,32 @@ export default async function OwnerMyPage({
   )
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function StatCard({
+  label,
+  value,
+  tone = 'normal',
+}: {
+  label: string
+  value: string
+  tone?: 'normal' | 'warn' | 'danger'
+}) {
+  const toneClass =
+    tone === 'danger'
+      ? 'border-red-300 bg-red-50 dark:border-red-900 dark:bg-red-950'
+      : tone === 'warn'
+      ? 'border-orange-300 bg-orange-50 dark:border-orange-900 dark:bg-orange-950'
+      : 'border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black'
+  return (
+    <div className={`rounded-xl border p-4 text-center ${toneClass}`}>
+      <p className="text-[10px] uppercase tracking-wide text-zinc-500">
+        {label}
+      </p>
+      <p className="mt-1 text-lg font-bold sm:text-xl">{value}</p>
+    </div>
+  )
+}
+
+function Info({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-black">
       <p className="text-xs text-zinc-500">{label}</p>

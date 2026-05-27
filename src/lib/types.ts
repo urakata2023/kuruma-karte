@@ -55,6 +55,16 @@ export type Notification = {
   created_at: string
 }
 
+export type VehiclePhoto = {
+  id: string
+  vehicle_id: string
+  shop_id: string
+  photo_url: string
+  caption: string | null
+  sort_order: number
+  created_at: string
+}
+
 export type MaintenanceRecord = {
   id: string
   vehicle_id: string
