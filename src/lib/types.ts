@@ -65,6 +65,8 @@ export type MaintenanceRecord = {
   description: string | null
   parts: string | null
   cost: number | null
+  created_by: 'shop' | 'customer'
+  attachment_url: string | null
   created_at: string
   updated_at: string
 }

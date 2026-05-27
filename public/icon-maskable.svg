@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- maskable: 安全領域は中央80%（半径100の余白） -->
+  <rect width="512" height="512" fill="#0a0a0a"/>
+  <g transform="translate(256 270)" fill="#fafafa" stroke="#fafafa" stroke-width="6" stroke-linejoin="round">
+    <path d="M-130 25 L-130 -16 L-90 -62 L90 -62 L130 -16 L130 25 Z"/>
+    <path d="M-72 -57 L-38 -24 L38 -24 L72 -57 Z" fill="#0a0a0a" stroke="none"/>
+    <circle cx="-80" cy="25" r="25" fill="#0a0a0a" stroke="#fafafa" stroke-width="6"/>
+    <circle cx="80" cy="25" r="25" fill="#0a0a0a" stroke="#fafafa" stroke-width="6"/>
+  </g>
+  <text x="256" y="400" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="38" font-weight="600" fill="#fafafa" text-anchor="middle">くるまカルテ</text>
+</svg>

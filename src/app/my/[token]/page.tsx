@@ -1,5 +1,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { ConfirmDeleteForm } from '@/components/confirm-delete-form'
+import { deleteOwnerMaintenanceRecord } from './maintenance/actions'
 import type { Vehicle, MaintenanceRecord } from '@/lib/types'
 
 type CustomerLite = { name: string }
@@ -54,7 +57,9 @@ export default async function OwnerMyPage({
         <div className="mx-auto flex max-w-2xl items-center justify-between">
           <div>
             <p className="text-xs text-zinc-500">{shop?.name ?? '車屋'}</p>
-            <p className="text-base font-semibold">{customer?.name ?? 'お客様'} 様</p>
+            <p className="text-base font-semibold">
+              {customer?.name ?? 'お客様'} 様
+            </p>
           </div>
           <p className="text-xs text-zinc-400">愛車のマイページ</p>
         </div>
@@ -159,44 +164,111 @@ export default async function OwnerMyPage({
 
       {/* 整備履歴タイムライン */}
       <section className="mx-auto w-full max-w-2xl px-6 pb-6">
-        <h2 className="mb-4 text-base font-semibold">整備の記録</h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-base font-semibold">整備・メモの記録</h2>
+          <Link
+            href={`/my/${token}/maintenance/new`}
+            className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+          >
+            ＋ 自分でメモを追加
+          </Link>
+        </div>
+
         {records.length === 0 ? (
           <div className="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-zinc-700">
             まだ整備の記録はありません
+            <br />
+            ガソリン代やメンテのメモ、見積もり書の写真などを自由に残せます
           </div>
         ) : (
           <ol className="relative space-y-4 border-l-2 border-zinc-200 pl-5 dark:border-zinc-800">
-            {records.map((r) => (
-              <li key={r.id} className="relative">
-                <span className="absolute -left-[27px] mt-1.5 h-3 w-3 rounded-full border-2 border-white bg-zinc-700 dark:border-black dark:bg-zinc-300" />
-                <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-black">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <p className="font-semibold">{r.title}</p>
-                    <p className="text-xs text-zinc-500">
-                      {formatDateJP(r.performed_on)}
-                    </p>
-                  </div>
-                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-zinc-500">
-                    {r.mileage_km != null && (
-                      <span>{r.mileage_km.toLocaleString()} km時点</span>
+            {records.map((r) => {
+              const isOwner = r.created_by === 'customer'
+              return (
+                <li key={r.id} className="relative">
+                  <span
+                    className={`absolute -left-[27px] mt-1.5 h-3 w-3 rounded-full border-2 border-white dark:border-black ${
+                      isOwner
+                        ? 'bg-blue-500 dark:bg-blue-400'
+                        : 'bg-zinc-700 dark:bg-zinc-300'
+                    }`}
+                  />
+                  <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-black">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                              isOwner
+                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                                : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                            }`}
+                          >
+                            {isOwner ? '自分のメモ' : 'お店から'}
+                          </span>
+                          <p className="font-semibold">{r.title}</p>
+                        </div>
+                        <p className="mt-1 text-xs text-zinc-500">
+                          {formatDateJP(r.performed_on)}
+                        </p>
+                      </div>
+                      {isOwner && (
+                        <div className="flex items-center gap-2 whitespace-nowrap text-xs">
+                          <Link
+                            href={`/my/${token}/maintenance/${r.id}/edit`}
+                            className="font-medium underline"
+                          >
+                            編集
+                          </Link>
+                          <ConfirmDeleteForm
+                            action={deleteOwnerMaintenanceRecord.bind(
+                              null,
+                              token,
+                              r.id
+                            )}
+                            label={`${r.title}（${formatDateJP(r.performed_on)}）`}
+                            className="text-xs font-medium text-red-600 hover:underline"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-zinc-500">
+                      {r.mileage_km != null && (
+                        <span>{r.mileage_km.toLocaleString()} km時点</span>
+                      )}
+                      {r.cost != null && (
+                        <span>¥{r.cost.toLocaleString()}</span>
+                      )}
+                    </div>
+                    {r.description && (
+                      <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">
+                        {r.description}
+                      </p>
                     )}
-                    {r.cost != null && (
-                      <span>¥{r.cost.toLocaleString()}</span>
+                    {r.parts && (
+                      <p className="mt-2 whitespace-pre-wrap text-xs text-zinc-500">
+                        交換部品：{r.parts}
+                      </p>
+                    )}
+                    {r.attachment_url && (
+                      <a
+                        href={r.attachment_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 block"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={r.attachment_url}
+                          alt="添付"
+                          className="max-h-64 w-full rounded-md border border-zinc-200 object-contain dark:border-zinc-800"
+                        />
+                      </a>
                     )}
                   </div>
-                  {r.description && (
-                    <p className="mt-2 whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">
-                      {r.description}
-                    </p>
-                  )}
-                  {r.parts && (
-                    <p className="mt-2 whitespace-pre-wrap text-xs text-zinc-500">
-                      交換部品：{r.parts}
-                    </p>
-                  )}
-                </div>
-              </li>
-            ))}
+                </li>
+              )
+            })}
           </ol>
         )}
       </section>
