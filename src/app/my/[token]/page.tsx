@@ -10,6 +10,7 @@ import { AlwaysWithYou } from '@/components/always-with-you'
 import { OwnerHeroPhoto } from '@/components/owner-hero-photo'
 import { PlateDisplay } from '@/components/plate-display'
 import { TouringList } from '@/components/touring-list'
+import { TouringMap } from '@/components/touring-map'
 import {
   calcMonthlyAverageKm,
   extractMileagePoints,
@@ -275,8 +276,8 @@ export default async function OwnerMyPage({
       </section>
 
       {/* 🛣️ ツーリング記録 */}
-      <section className="mx-auto w-full max-w-2xl px-6 pb-6">
-        <div className="mb-4 flex items-center justify-between">
+      <section className="mx-auto w-full max-w-2xl space-y-4 px-6 pb-6">
+        <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">🛣️ 一緒に旅した記録</h2>
           <Link
             href={`/my/${token}/touring/new`}
@@ -285,6 +286,12 @@ export default async function OwnerMyPage({
             ＋ ツーリングを記録
           </Link>
         </div>
+
+        {/* マップ：座標が入っている記録が1件以上あれば表示 */}
+        {tourings.some((t) => t.latitude != null && t.longitude != null) && (
+          <TouringMap records={tourings} />
+        )}
+
         <TouringList records={tourings} token={token} />
       </section>
 

@@ -6,10 +6,8 @@ import { useEffect, useState } from 'react'
  * 「ALWAYS WITH YOU」— 愛車との時間をリアルタイムで刻むカウンター
  *
  * 例: 02y 05m 12d 08h 15m 32s
- * 起点：購入日（なければ初度登録年月の月初）
- *
- * タイトル・タグラインは ITC Avant Garde Gothic Bold (display font)、
- * 数字は等幅フォントで桁ずれ防止。
+ * すべて ITC Avant Garde Gothic Bold (var(--font-display)) で統一。
+ * 各数字を固定幅spanで囲み、tabular非対応フォントでも桁ずれしないように。
  */
 export function AlwaysWithYou({ startIso }: { startIso: string }) {
   const [now, setNow] = useState<Date | null>(null)
@@ -39,18 +37,24 @@ export function AlwaysWithYou({ startIso }: { startIso: string }) {
 
         <p
           className="text-xs uppercase tracking-[0.5em] text-zinc-400"
-          style={{ fontFamily: 'var(--font-display)' }}
+          style={{ fontFamily: 'var(--font-display), sans-serif' }}
         >
           Always with you
         </p>
 
-        <p className="mt-5 font-mono text-2xl tracking-tight tabular-nums sm:text-3xl">
+        <p
+          className="mt-5 text-2xl sm:text-3xl"
+          style={{
+            fontFamily: 'var(--font-display), sans-serif',
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
           {now ? <Counter from={from} to={now} /> : <Placeholder />}
         </p>
 
         <p
           className="mt-5 text-[11px] uppercase tracking-[0.3em] text-zinc-500"
-          style={{ fontFamily: 'var(--font-display)' }}
+          style={{ fontFamily: 'var(--font-display), sans-serif' }}
         >
           Keep on rolling.
         </p>
@@ -59,22 +63,40 @@ export function AlwaysWithYou({ startIso }: { startIso: string }) {
   )
 }
 
+/** 数字をすべて固定幅spanで包んで、フォントの数字幅差を吸収 */
 function Counter({ from, to }: { from: Date; to: Date }) {
   const d = diffYMDHMS(from, to)
   return (
+    <span>
+      <Pad2 n={d.years} />
+      <Unit>y</Unit> <Pad2 n={d.months} />
+      <Unit>m</Unit> <Pad2 n={d.days} />
+      <Unit>d</Unit> <Pad2 n={d.hours} />
+      <Unit>h</Unit> <Pad2 n={d.minutes} />
+      <Unit>m</Unit> <Pad2 n={d.seconds} />
+      <Unit>s</Unit>
+    </span>
+  )
+}
+
+function Pad2({ n }: { n: number }) {
+  const s = String(Math.max(0, n)).padStart(2, '0')
+  return (
     <>
-      {pad2(d.years)}y {pad2(d.months)}m {pad2(d.days)}d {pad2(d.hours)}h{' '}
-      {pad2(d.minutes)}m {pad2(d.seconds)}s
+      <span className="inline-block w-[0.62em] text-center">{s[0]}</span>
+      <span className="inline-block w-[0.62em] text-center">{s[1]}</span>
     </>
   )
 }
 
-function Placeholder() {
-  return <span className="opacity-40">--y --m --d --h --m --s</span>
+function Unit({ children }: { children: React.ReactNode }) {
+  return <span className="text-zinc-400">{children}</span>
 }
 
-function pad2(n: number): string {
-  return String(Math.max(0, n)).padStart(2, '0')
+function Placeholder() {
+  return (
+    <span className="opacity-40">--y --m --d --h --m --s</span>
+  )
 }
 
 function diffYMDHMS(from: Date, to: Date) {
