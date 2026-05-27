@@ -65,6 +65,23 @@ export type VehiclePhoto = {
   created_at: string
 }
 
+export type TouringRecord = {
+  id: string
+  vehicle_id: string
+  shop_id: string
+  touring_date: string
+  title: string
+  place_name: string | null
+  address: string | null
+  latitude: number | null
+  longitude: number | null
+  photo_url: string | null
+  memo: string | null
+  created_by: 'shop' | 'customer'
+  created_at: string
+  updated_at: string
+}
+
 export type MaintenanceRecord = {
   id: string
   vehicle_id: string

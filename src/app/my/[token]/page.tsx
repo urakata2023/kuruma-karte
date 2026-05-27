@@ -7,6 +7,9 @@ import { MileageChart } from '@/components/mileage-chart'
 import { VehicleGallery } from '@/components/vehicle-gallery'
 import { ShareButton } from '@/components/share-button'
 import { AlwaysWithYou } from '@/components/always-with-you'
+import { OwnerHeroPhoto } from '@/components/owner-hero-photo'
+import { PlateDisplay } from '@/components/plate-display'
+import { TouringList } from '@/components/touring-list'
 import {
   calcMonthlyAverageKm,
   extractMileagePoints,
@@ -16,6 +19,7 @@ import type {
   Vehicle,
   MaintenanceRecord,
   VehiclePhoto,
+  TouringRecord,
 } from '@/lib/types'
 
 type CustomerLite = { name: string }
@@ -88,6 +92,7 @@ export default async function OwnerMyPage({
     { data: shop },
     { data: recordsData },
     { data: photosData },
+    { data: touringData },
   ] = await Promise.all([
     admin
       .from('customers')
@@ -111,12 +116,18 @@ export default async function OwnerMyPage({
       .eq('vehicle_id', vehicle.id)
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: true }),
+    admin
+      .from('touring_records')
+      .select('*')
+      .eq('vehicle_id', vehicle.id)
+      .order('touring_date', { ascending: false }),
   ])
 
   const records = (recordsData ?? []) as MaintenanceRecord[]
   const photos = (photosData ?? []) as VehiclePhoto[]
+  const tourings = (touringData ?? []) as TouringRecord[]
 
-  // A: 統計データ
+  // 統計
   const mileagePoints = extractMileagePoints(records)
   const latestMileage =
     mileagePoints.length > 0
@@ -124,7 +135,6 @@ export default async function OwnerMyPage({
       : null
   const monthlyAverageKm = calcMonthlyAverageKm(mileagePoints)
 
-  // 愛車との時間の起点：購入日 → なければ初度登録年月の月初
   const startIso: string | null = vehicle.purchased_on
     ? `${vehicle.purchased_on}T00:00:00`
     : vehicle.first_registration_ym
@@ -135,7 +145,6 @@ export default async function OwnerMyPage({
     ? daysUntil(vehicle.inspection_expires_on)
     : null
 
-  // C: シェアURL（NEXT_PUBLIC_APP_URL or 現状のホスト推定）
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL ?? 'https://kuruma-karte.vercel.app'
   const shareUrl = `${appUrl}/my/${token}`
@@ -160,37 +169,34 @@ export default async function OwnerMyPage({
         </div>
       </header>
 
-      {/* ヒーロー：愛車写真 */}
+      {/* ヒーロー：愛車写真（未登録ならタップで追加） */}
       <section className="relative bg-gradient-to-br from-zinc-100 to-zinc-300 dark:from-zinc-800 dark:to-zinc-950">
         <div className="mx-auto max-w-2xl px-6 py-12">
-          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={vehicle.photo_url ?? '/default-vehicle.svg'}
-              alt={vehicle.model ?? '愛車'}
-              className="h-full w-full object-cover"
-            />
-          </div>
+          <OwnerHeroPhoto
+            token={token}
+            currentUrl={vehicle.photo_url}
+            alt={vehicle.model ?? '愛車'}
+          />
           <div className="mt-6 text-center">
             <h1 className="text-2xl font-semibold tracking-tight">
               {vehicle.model ?? 'お車'}
             </h1>
             {vehicle.plate_number && (
               <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                {vehicle.plate_number}
+                <PlateDisplay plate={vehicle.plate_number} />
               </p>
             )}
           </div>
         </div>
       </section>
 
-      {/* ALWAYS WITH YOU — 愛車との時間カウンター（リアルタイム） */}
+      {/* ALWAYS WITH YOU カウンター */}
       {startIso && <AlwaysWithYou startIso={startIso} />}
 
-      {/* ギャラリー（複数枚） */}
+      {/* ギャラリー */}
       <VehicleGallery photos={photos} heroPhotoUrl={vehicle.photo_url} />
 
-      {/* 統計カード（次回車検 / 走行距離 / 月平均） */}
+      {/* 統計カード */}
       <section className="mx-auto w-full max-w-2xl px-6 pt-6">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {daysToInspection !== null && (
@@ -266,6 +272,20 @@ export default async function OwnerMyPage({
             }
           />
         </div>
+      </section>
+
+      {/* 🛣️ ツーリング記録 */}
+      <section className="mx-auto w-full max-w-2xl px-6 pb-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-base font-semibold">🛣️ 一緒に旅した記録</h2>
+          <Link
+            href={`/my/${token}/touring/new`}
+            className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+          >
+            ＋ ツーリングを記録
+          </Link>
+        </div>
+        <TouringList records={tourings} token={token} />
       </section>
 
       {/* 整備履歴タイムライン */}
