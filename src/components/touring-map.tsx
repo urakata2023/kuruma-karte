@@ -1,22 +1,24 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import type { TouringRecord } from '@/lib/types'
 
 /**
  * ツーリング記録の lat/lng を地図上にピン表示する。
  * Leaflet + OpenStreetMap（完全無料）。
- *
- * dynamic import で SSR を回避（leafletは window参照のため）。
  */
 export function TouringMap({ records }: { records: TouringRecord[] }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<unknown>(null)
 
-  // 緯度経度が入っている記録だけ
-  const valid = records.filter(
-    (r): r is TouringRecord & { latitude: number; longitude: number } =>
-      r.latitude != null && r.longitude != null
+  // 緯度経度が入っている記録だけ（useMemoでメモ化、毎レンダリングで再生成しない）
+  const valid = useMemo(
+    () =>
+      records.filter(
+        (r): r is TouringRecord & { latitude: number; longitude: number } =>
+          r.latitude != null && r.longitude != null
+      ),
+    [records]
   )
 
   useEffect(() => {

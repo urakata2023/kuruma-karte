@@ -6,6 +6,49 @@ import { redirect } from 'next/navigation'
 
 type State = { error?: string } | undefined
 
+/**
+ * 住所文字列から緯度経度を取得（OpenStreetMap Nominatim 経由）。
+ * 無料・APIキー不要だが、Nominatimの利用規約上 User-Agent 必須・1req/sec推奨。
+ * Server Action として呼び出されるため、CORS制限を受けない。
+ */
+export async function geocodeAddress(
+  address: string
+): Promise<{ lat: number; lng: number; displayName: string } | null> {
+  const trimmed = address.trim()
+  if (!trimmed) return null
+
+  const url =
+    'https://nominatim.openstreetmap.org/search?' +
+    new URLSearchParams({
+      q: trimmed,
+      format: 'json',
+      limit: '1',
+      'accept-language': 'ja',
+    }).toString()
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'kuruma-karte/1.0 (https://kuruma-karte.vercel.app)',
+      },
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as Array<{
+      lat: string
+      lon: string
+      display_name: string
+    }>
+    if (!Array.isArray(data) || data.length === 0) return null
+    return {
+      lat: parseFloat(data[0].lat),
+      lng: parseFloat(data[0].lon),
+      displayName: data[0].display_name,
+    }
+  } catch {
+    return null
+  }
+}
+
 function parseString(formData: FormData, key: string): string | null {
   const v = ((formData.get(key) as string) ?? '').trim()
   return v || null

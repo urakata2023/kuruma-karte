@@ -1,7 +1,8 @@
 'use client'
 
-import { useActionState, useRef, useState } from 'react'
+import { useActionState, useRef, useState, useTransition } from 'react'
 import { processVehiclePhoto } from '@/lib/image-process'
+import { geocodeAddress } from '@/app/my/[token]/touring/actions'
 import type { TouringRecord } from '@/lib/types'
 
 type State = { error?: string } | undefined
@@ -24,7 +25,10 @@ export function TouringForm({
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const [photoError, setPhotoError] = useState<string | null>(null)
+
   const [geoStatus, setGeoStatus] = useState<string | null>(null)
+  const [isGeocoding, startGeocoding] = useTransition()
+  const addressRef = useRef<HTMLInputElement>(null)
   const latRef = useRef<HTMLInputElement>(null)
   const lngRef = useRef<HTMLInputElement>(null)
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
@@ -73,13 +77,37 @@ export function TouringForm({
         if (latRef.current) latRef.current.value = String(lat)
         if (lngRef.current) lngRef.current.value = String(lng)
         setCoords({ lat, lng })
-        setGeoStatus(`✓ 取得しました（${lat.toFixed(5)}, ${lng.toFixed(5)}）`)
+        setGeoStatus(`✓ 現在地（${lat.toFixed(5)}, ${lng.toFixed(5)}）`)
       },
       (err) => {
         setGeoStatus(`取得失敗: ${err.message}`)
       },
       { enableHighAccuracy: true, timeout: 10000 }
     )
+  }
+
+  function handleGeocode() {
+    const address = addressRef.current?.value?.trim()
+    if (!address) {
+      setGeoStatus('上の「住所」欄に場所を入れてからボタンを押してください')
+      return
+    }
+    setGeoStatus(`「${address}」を検索中…`)
+    startGeocoding(async () => {
+      const result = await geocodeAddress(address)
+      if (!result) {
+        setGeoStatus(
+          '住所が見つかりませんでした。もう少し詳しい住所や有名な地名でお試しください'
+        )
+        return
+      }
+      if (latRef.current) latRef.current.value = String(result.lat)
+      if (lngRef.current) lngRef.current.value = String(result.lng)
+      setCoords({ lat: result.lat, lng: result.lng })
+      setGeoStatus(
+        `✓ 住所から取得（${result.lat.toFixed(5)}, ${result.lng.toFixed(5)}）`
+      )
+    })
   }
 
   const todayStr = new Date().toISOString().slice(0, 10)
@@ -95,7 +123,7 @@ export function TouringForm({
           name="title"
           required
           defaultValue={record?.title ?? ''}
-          placeholder="例：箱根ツーリング、伊豆ドライブ"
+          placeholder="例:箱根ツーリング、伊豆ドライブ"
           className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950"
         />
       </div>
@@ -122,7 +150,7 @@ export function TouringForm({
           id="place_name"
           name="place_name"
           defaultValue={record?.place_name ?? ''}
-          placeholder="例：芦ノ湖、伊豆スカイライン"
+          placeholder="例:芦ノ湖、伊豆スカイライン"
           className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950"
         />
       </div>
@@ -131,30 +159,44 @@ export function TouringForm({
         <label htmlFor="address" className="block text-sm font-medium">
           住所
           <span className="ml-2 text-xs font-normal text-zinc-500">
-            （任意・分かる範囲で）
+            （ここから座標を検索できます）
           </span>
         </label>
         <input
           id="address"
           name="address"
+          ref={addressRef}
           defaultValue={record?.address ?? ''}
-          placeholder="例：神奈川県箱根町元箱根"
+          placeholder="例:神奈川県箱根町元箱根、東京駅"
           className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950"
         />
       </div>
 
-      {/* 現在地取得 */}
+      {/* 地図用の座標：現在地 or 住所検索 */}
       <div className="space-y-2 rounded-md border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900">
         <label className="block text-sm font-medium">
-          🗺️ 現在地を地図用に記録
+          🗺️ 地図ピン用の座標
         </label>
-        <button
-          type="button"
-          onClick={handleGetLocation}
-          className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-800"
-        >
-          📍 現在地を取得
-        </button>
+        <p className="text-xs text-zinc-500">
+          どちらかで座標を取得すると、マイページの地図に🚗ピンが立ちます。
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handleGetLocation}
+            className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-800"
+          >
+            📍 現在地を取得
+          </button>
+          <button
+            type="button"
+            onClick={handleGeocode}
+            disabled={isGeocoding}
+            className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:bg-zinc-800"
+          >
+            {isGeocoding ? '検索中…' : '🔎 上の住所から座標を取得'}
+          </button>
+        </div>
         {geoStatus && (
           <p className="text-xs text-zinc-600 dark:text-zinc-400">{geoStatus}</p>
         )}
@@ -175,9 +217,6 @@ export function TouringForm({
           ref={lngRef}
           defaultValue={record?.longitude ?? ''}
         />
-        <p className="text-[10px] text-zinc-500">
-          ※ 地図上のピン表示は今後のアップデートで対応します
-        </p>
       </div>
 
       <div className="space-y-1">
