@@ -78,11 +78,32 @@ export function MaintenanceTimeline({
 
       {/* タイムライン */}
       {filtered.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-zinc-700">
-          {records.length === 0
-            ? 'まだ整備の記録はありません'
-            : '該当する記録がありません'}
-        </div>
+        records.length === 0 ? (
+          <div className="rounded-xl border-2 border-dashed border-zinc-300 bg-gradient-to-br from-zinc-50 to-white p-8 text-center dark:border-zinc-700 dark:from-zinc-900 dark:to-black">
+            <div className="text-5xl">🔧</div>
+            <p className="mt-4 text-sm font-semibold">
+              最初の整備記録を一緒に残しましょう
+            </p>
+            <p className="mt-2 text-xs text-zinc-500">
+              オイル交換、タイヤ交換、ちょっとした洗車メモ…<br />
+              小さな1件が、未来の自分と次のオーナーへの贈り物になります。
+            </p>
+            <Link
+              href={`/my/${token}/maintenance/new`}
+              className="mt-5 inline-block rounded-full px-6 py-2.5 text-sm font-semibold"
+              style={{
+                background: 'var(--theme-primary)',
+                color: 'var(--theme-primary-fg)',
+              }}
+            >
+              ✏️ 最初の1件を記録する
+            </Link>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-zinc-700">
+            該当する記録がありません
+          </div>
+        )
       ) : (
         <ol className="relative space-y-4 border-l-2 border-zinc-200 pl-5 dark:border-zinc-800">
           {filtered.map((r) => {

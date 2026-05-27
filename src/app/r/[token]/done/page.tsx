@@ -20,7 +20,8 @@ export default async function RegistrationDonePage({
 
   if (!shop) notFound()
 
-  const myPageUrl = view ? `/my/${view}` : null
+  // 初回はオンボーディングを出すため ?welcome=1 を付与
+  const myPageUrl = view ? `/my/${view}?welcome=1` : null
 
   return (
     <div className="flex flex-1 items-center justify-center px-6 py-10">

@@ -12,6 +12,7 @@ import { PlateDisplay } from '@/components/plate-display'
 import { TouringList } from '@/components/touring-list'
 import { CollapsibleMap } from '@/components/collapsible-map'
 import { ToastBanner } from '@/components/toast-banner'
+import { OnboardingTour } from '@/components/onboarding-tour'
 import {
   calcMonthlyAverageKm,
   extractMileagePoints,
@@ -157,6 +158,9 @@ export default async function OwnerMyPage({
 
   return (
     <div className="flex flex-1 flex-col">
+      {/* オンボーディングツアー (初回 or ?welcome=1 で出現) */}
+      <OnboardingTour />
+
       {/* Server Action 経由の結果バナー */}
       {(toast === 'ok' || toast === 'err') && msg && (
         <ToastBanner type={toast} message={msg} />

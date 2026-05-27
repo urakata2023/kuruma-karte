@@ -15,10 +15,25 @@ export function TouringList({
 }) {
   if (records.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-zinc-700">
-        まだツーリングの記録はありません
-        <br />
-        愛車と行った場所の思い出を残しましょう
+      <div className="rounded-xl border-2 border-dashed border-zinc-300 bg-gradient-to-br from-zinc-50 to-white p-8 text-center dark:border-zinc-700 dark:from-zinc-900 dark:to-black">
+        <div className="text-5xl">🛣️</div>
+        <p className="mt-4 text-sm font-semibold">
+          愛車と行った場所、残しませんか？
+        </p>
+        <p className="mt-2 text-xs text-zinc-500">
+          ふらっと行ったカフェ、海沿いのドライブ、峠の道…<br />
+          場所を入れると、自動で地図にピンが立ちます。
+        </p>
+        <Link
+          href={`/my/${token}/touring/new`}
+          className="mt-5 inline-block rounded-full px-6 py-2.5 text-sm font-semibold"
+          style={{
+            background: 'var(--theme-primary)',
+            color: 'var(--theme-primary-fg)',
+          }}
+        >
+          🗺️ 最初の1件を記録する
+        </Link>
       </div>
     )
   }

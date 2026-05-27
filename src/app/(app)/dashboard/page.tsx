@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentShop } from '@/lib/shop'
 import Link from 'next/link'
 import { QrDisplay } from '@/components/qr-display'
+import { DemoDataPanel } from '@/components/demo-data-panel'
 
 type ThisMonthVehicle = {
   id: string
@@ -76,6 +77,8 @@ export default async function DashboardPage() {
         token={shop.registration_token}
         shopName={shop.name}
       />
+
+      <DemoDataPanel />
 
       <section className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-black">
         <div className="flex items-center justify-between">

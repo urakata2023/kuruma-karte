@@ -19,6 +19,9 @@ export function Header({ shopName }: { shopName: string }) {
             <Link href="/settings/theme" className="hover:text-zinc-900 dark:hover:text-white">
               🎨 テーマ
             </Link>
+            <Link href="/flyer" className="hover:text-zinc-900 dark:hover:text-white">
+              📄 チラシ
+            </Link>
           </nav>
         </div>
         <div className="flex items-center gap-3">
