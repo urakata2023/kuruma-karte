@@ -6,8 +6,8 @@ import { MaintenanceTimeline } from '@/components/maintenance-timeline'
 import { MileageChart } from '@/components/mileage-chart'
 import { VehicleGallery } from '@/components/vehicle-gallery'
 import { ShareButton } from '@/components/share-button'
+import { AlwaysWithYou } from '@/components/always-with-you'
 import {
-  calcOwnershipDays,
   calcMonthlyAverageKm,
   extractMileagePoints,
   fmtNum,
@@ -123,7 +123,13 @@ export default async function OwnerMyPage({
       ? mileagePoints[mileagePoints.length - 1].km
       : null
   const monthlyAverageKm = calcMonthlyAverageKm(mileagePoints)
-  const ownershipDays = calcOwnershipDays(vehicle)
+
+  // 愛車との時間の起点：購入日 → なければ初度登録年月の月初
+  const startIso: string | null = vehicle.purchased_on
+    ? `${vehicle.purchased_on}T00:00:00`
+    : vehicle.first_registration_ym
+      ? `${vehicle.first_registration_ym}-01T00:00:00`
+      : null
 
   const daysToInspection = vehicle.inspection_expires_on
     ? daysUntil(vehicle.inspection_expires_on)
@@ -178,12 +184,15 @@ export default async function OwnerMyPage({
         </div>
       </section>
 
+      {/* ALWAYS WITH YOU — 愛車との時間カウンター（リアルタイム） */}
+      {startIso && <AlwaysWithYou startIso={startIso} />}
+
       {/* ギャラリー（複数枚） */}
       <VehicleGallery photos={photos} heroPhotoUrl={vehicle.photo_url} />
 
-      {/* 統計カード（A: 愛車との時間 / 走行距離 / 月平均） */}
+      {/* 統計カード（次回車検 / 走行距離 / 月平均） */}
       <section className="mx-auto w-full max-w-2xl px-6 pt-6">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {daysToInspection !== null && (
             <StatCard
               label="次回車検まで"
@@ -199,12 +208,6 @@ export default async function OwnerMyPage({
                   ? 'warn'
                   : 'normal'
               }
-            />
-          )}
-          {ownershipDays != null && (
-            <StatCard
-              label="愛車との時間"
-              value={`${fmtNum(ownershipDays)}日`}
             />
           )}
           {latestMileage != null && (
