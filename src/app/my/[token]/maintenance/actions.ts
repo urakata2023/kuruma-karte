@@ -1,6 +1,7 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { processImageServerSide } from '@/lib/image-server'
 import { redirect } from 'next/navigation'
 
 type State = { error?: string } | undefined
@@ -17,10 +18,6 @@ function parseInt0(formData: FormData, key: string): number | null {
   return Number.isFinite(n) ? Math.round(n) : null
 }
 
-/**
- * view_token から車両を解決。
- * tokenが無効なら null を返す（呼び出し元でエラー処理）
- */
 async function resolveVehicleByToken(token: string) {
   const admin = createAdminClient()
   const { data } = await admin
@@ -32,33 +29,40 @@ async function resolveVehicleByToken(token: string) {
 }
 
 /**
- * 添付画像をStorageへアップロード
+ * 添付画像をサーバーで処理してStorageへアップロード。
+ * クライアント変換失敗時の保険として server-side 変換が走る。
  */
 async function uploadAttachmentIfPresent(
   formData: FormData,
   vehicleId: string
-): Promise<string | null> {
+): Promise<{ url: string | null; error?: string }> {
   const file = formData.get('attachment')
-  if (!(file instanceof File) || file.size === 0) return null
-  if (file.size > 10 * 1024 * 1024) return null // 10MB上限超過は無視
+  if (!(file instanceof File) || file.size === 0) return { url: null }
+  if (file.size > 20 * 1024 * 1024) {
+    return { url: null, error: '画像サイズは20MB以下にしてください' }
+  }
 
-  const admin = createAdminClient()
-  const ext = (file.name.split('.').pop() ?? 'jpg').toLowerCase()
-  const path = `${vehicleId}/${Date.now()}.${ext}`
+  try {
+    const { buffer, ext, contentType } = await processImageServerSide(file)
+    const admin = createAdminClient()
+    const path = `${vehicleId}/${Date.now()}.${ext}`
+    const { error } = await admin.storage
+      .from('maintenance-attachments')
+      .upload(path, buffer, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType,
+      })
+    if (error) return { url: null, error: error.message }
 
-  const { error } = await admin.storage
-    .from('maintenance-attachments')
-    .upload(path, file, {
-      cacheControl: '3600',
-      upsert: true,
-      contentType: file.type || `image/${ext}`,
-    })
-  if (error) return null
-
-  const {
-    data: { publicUrl },
-  } = admin.storage.from('maintenance-attachments').getPublicUrl(path)
-  return publicUrl
+    const {
+      data: { publicUrl },
+    } = admin.storage.from('maintenance-attachments').getPublicUrl(path)
+    return { url: publicUrl }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return { url: null, error: `写真の処理に失敗: ${msg}` }
+  }
 }
 
 export async function createOwnerMaintenanceRecord(
@@ -74,7 +78,9 @@ export async function createOwnerMaintenanceRecord(
   const performed_on = parseString(formData, 'performed_on')
   if (!performed_on) return { error: '日付を入力してください' }
 
-  const attachment_url = await uploadAttachmentIfPresent(formData, vehicle.id)
+  const { url: attachment_url, error: uploadError } =
+    await uploadAttachmentIfPresent(formData, vehicle.id)
+  if (uploadError) return { error: uploadError }
 
   const admin = createAdminClient()
   const { error } = await admin.from('maintenance_records').insert({
@@ -104,7 +110,6 @@ export async function updateOwnerMaintenanceRecord(
 
   const admin = createAdminClient()
 
-  // この車両のお客様自身の記録だけ編集可能
   const { data: record } = await admin
     .from('maintenance_records')
     .select('id, created_by, attachment_url')
@@ -121,7 +126,9 @@ export async function updateOwnerMaintenanceRecord(
   const performed_on = parseString(formData, 'performed_on')
   if (!performed_on) return { error: '日付を入力してください' }
 
-  const new_attachment = await uploadAttachmentIfPresent(formData, vehicle.id)
+  const { url: new_attachment, error: uploadError } =
+    await uploadAttachmentIfPresent(formData, vehicle.id)
+  if (uploadError) return { error: uploadError }
   const attachment_url = new_attachment ?? record.attachment_url
 
   const { error } = await admin

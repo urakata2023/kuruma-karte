@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentShop } from '@/lib/shop'
+import { processImageServerSide } from '@/lib/image-server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -13,8 +14,7 @@ function parseField(formData: FormData, key: string): string | null {
 }
 
 /**
- * 写真をSupabase Storageへアップロードし、公開URLを返す。
- * 失敗時は null（既存photo_urlを維持する）。
+ * 写真をサーバー側で処理してSupabase Storageへアップロード。
  */
 async function uploadPhotoIfPresent(
   formData: FormData,
@@ -23,35 +23,36 @@ async function uploadPhotoIfPresent(
 ): Promise<{ photoUrl?: string | null; error?: string }> {
   const photo = formData.get('photo')
   if (!(photo instanceof File) || photo.size === 0) {
-    return {} // 写真未指定、既存維持
+    return {}
+  }
+  if (photo.size > 20 * 1024 * 1024) {
+    return { error: '画像サイズは20MB以下にしてください' }
   }
 
-  // ファイルサイズ制限（10MB）
-  if (photo.size > 10 * 1024 * 1024) {
-    return { error: '画像サイズは10MB以下にしてください' }
+  try {
+    const { buffer, ext, contentType } = await processImageServerSide(photo)
+    const supabase = await createClient()
+    const path = `${shopId}/${vehicleId}/${Date.now()}.${ext}`
+    const { error: uploadError } = await supabase.storage
+      .from('vehicle-photos')
+      .upload(path, buffer, {
+        cacheControl: '3600',
+        upsert: true,
+        contentType,
+      })
+
+    if (uploadError) {
+      return { error: `写真のアップロードに失敗: ${uploadError.message}` }
+    }
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from('vehicle-photos').getPublicUrl(path)
+    return { photoUrl: publicUrl }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return { error: `写真の処理に失敗: ${msg}` }
   }
-
-  const ext = (photo.name.split('.').pop() ?? 'jpg').toLowerCase()
-  const path = `${shopId}/${vehicleId}/${Date.now()}.${ext}`
-
-  const supabase = await createClient()
-  const { error: uploadError } = await supabase.storage
-    .from('vehicle-photos')
-    .upload(path, photo, {
-      cacheControl: '3600',
-      upsert: true,
-      contentType: photo.type || `image/${ext}`,
-    })
-
-  if (uploadError) {
-    return { error: `写真のアップロードに失敗: ${uploadError.message}` }
-  }
-
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from('vehicle-photos').getPublicUrl(path)
-
-  return { photoUrl: publicUrl }
 }
 
 export async function createVehicle(
@@ -70,7 +71,6 @@ export async function createVehicle(
     .single()
   if (!customer) return { error: '顧客が見つかりません' }
 
-  // まず写真なしで作成し、IDが取れてから写真をアップロード
   const { data: newVehicle, error: insertError } = await supabase
     .from('vehicles')
     .insert({
@@ -90,7 +90,6 @@ export async function createVehicle(
     return { error: insertError?.message ?? '車両登録に失敗しました' }
   }
 
-  // 写真があればアップロード
   const photoResult = await uploadPhotoIfPresent(
     formData,
     shop.id,
@@ -118,7 +117,6 @@ export async function updateVehicle(
   const { shop } = await getCurrentShop()
   const supabase = await createClient()
 
-  // 写真があればアップロード
   const photoResult = await uploadPhotoIfPresent(formData, shop.id, id)
   if (photoResult.error) return { error: photoResult.error }
 

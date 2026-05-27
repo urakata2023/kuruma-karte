@@ -1,6 +1,7 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { processImageServerSide } from '@/lib/image-server'
 import { redirect } from 'next/navigation'
 
 type State = { error?: string } | undefined
@@ -8,7 +9,6 @@ type State = { error?: string } | undefined
 /**
  * 公開登録フォームのServer Action。
  * RLSなしのservice_roleを使うため、tokenの存在検証が必須。
- * tokenから shop_id を解決して、その shop に紐づけて customers / vehicles を作る。
  */
 export async function registerCustomerVehicle(
   token: string,
@@ -53,7 +53,7 @@ export async function registerCustomerVehicle(
     return { error: `お客様情報の登録に失敗しました: ${cErr?.message ?? ''}` }
   }
 
-  // 4. vehicle 作成（写真URLは後で更新）
+  // 4. vehicle 作成
   const { data: newVehicle, error: vErr } = await admin
     .from('vehicles')
     .insert({
@@ -69,20 +69,18 @@ export async function registerCustomerVehicle(
     return { error: `車両情報の登録に失敗しました: ${vErr?.message ?? ''}` }
   }
 
-  // 5. 写真があればアップロード（service_role経由で RLS bypass）
+  // 5. 写真があればサーバー側で処理してアップロード
   const photo = formData.get('photo')
-  if (photo instanceof File && photo.size > 0) {
-    if (photo.size > 10 * 1024 * 1024) {
-      // サイズオーバーは無視（顧客と車は作成済み）
-    } else {
-      const ext = (photo.name.split('.').pop() ?? 'jpg').toLowerCase()
+  if (photo instanceof File && photo.size > 0 && photo.size <= 20 * 1024 * 1024) {
+    try {
+      const { buffer, ext, contentType } = await processImageServerSide(photo)
       const path = `${shop.id}/${newVehicle.id}/${Date.now()}.${ext}`
       const { error: uploadError } = await admin.storage
         .from('vehicle-photos')
-        .upload(path, photo, {
+        .upload(path, buffer, {
           cacheControl: '3600',
           upsert: true,
-          contentType: photo.type || `image/${ext}`,
+          contentType,
         })
       if (!uploadError) {
         const {
@@ -93,7 +91,8 @@ export async function registerCustomerVehicle(
           .update({ photo_url: publicUrl })
           .eq('id', newVehicle.id)
       }
-      // アップロード失敗してもエラー扱いしない（顧客登録自体は成功）
+    } catch (e) {
+      console.warn('写真処理に失敗（顧客・車両登録は成功）:', e)
     }
   }
 
