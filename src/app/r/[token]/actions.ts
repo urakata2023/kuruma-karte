@@ -53,17 +53,48 @@ export async function registerCustomerVehicle(
     return { error: `お客様情報の登録に失敗しました: ${cErr?.message ?? ''}` }
   }
 
-  // 4. vehicle 作成
-  const { error: vErr } = await admin.from('vehicles').insert({
-    customer_id: customer.id,
-    shop_id: shop.id,
-    model,
-    plate_number,
-    inspection_expires_on,
-  })
-  if (vErr) {
-    // 顧客は作れたが車登録に失敗。customerは残す（後から店舗側で補完可能）
-    return { error: `車両情報の登録に失敗しました: ${vErr.message}` }
+  // 4. vehicle 作成（写真URLは後で更新）
+  const { data: newVehicle, error: vErr } = await admin
+    .from('vehicles')
+    .insert({
+      customer_id: customer.id,
+      shop_id: shop.id,
+      model,
+      plate_number,
+      inspection_expires_on,
+    })
+    .select('id')
+    .single()
+  if (vErr || !newVehicle) {
+    return { error: `車両情報の登録に失敗しました: ${vErr?.message ?? ''}` }
+  }
+
+  // 5. 写真があればアップロード（service_role経由で RLS bypass）
+  const photo = formData.get('photo')
+  if (photo instanceof File && photo.size > 0) {
+    if (photo.size > 10 * 1024 * 1024) {
+      // サイズオーバーは無視（顧客と車は作成済み）
+    } else {
+      const ext = (photo.name.split('.').pop() ?? 'jpg').toLowerCase()
+      const path = `${shop.id}/${newVehicle.id}/${Date.now()}.${ext}`
+      const { error: uploadError } = await admin.storage
+        .from('vehicle-photos')
+        .upload(path, photo, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: photo.type || `image/${ext}`,
+        })
+      if (!uploadError) {
+        const {
+          data: { publicUrl },
+        } = admin.storage.from('vehicle-photos').getPublicUrl(path)
+        await admin
+          .from('vehicles')
+          .update({ photo_url: publicUrl })
+          .eq('id', newVehicle.id)
+      }
+      // アップロード失敗してもエラー扱いしない（顧客登録自体は成功）
+    }
   }
 
   redirect(`/r/${token}/done?name=${encodeURIComponent(name)}`)
