@@ -14,37 +14,45 @@ export function PublicRegistrationForm({
   shopName: string
 }) {
   const [state, formAction, pending] = useActionState(action, undefined)
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
-  const [compressing, setCompressing] = useState(false)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [previewable, setPreviewable] = useState(false)
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
+  const [processing, setProcessing] = useState(false)
   const [photoError, setPhotoError] = useState<string | null>(null)
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) {
-      setPhotoPreview(null)
-      setPhotoError(null)
+      setSelectedFileName(null)
       return
     }
 
-    setCompressing(true)
+    setProcessing(true)
     setPhotoError(null)
+    setSelectedFileName(file.name)
     try {
       const processed = await processVehiclePhoto(file)
       const dt = new DataTransfer()
       dt.items.add(processed)
       e.target.files = dt.files
-      setPhotoPreview(URL.createObjectURL(processed))
+
+      if (/image\/(jpe?g|png|webp)/i.test(processed.type)) {
+        setPreview(URL.createObjectURL(processed))
+        setPreviewable(true)
+      } else {
+        setPreview(null)
+        setPreviewable(false)
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : JSON.stringify(err)
       console.error('画像処理失敗:', msg, err)
       setPhotoError(
-        '写真の読み込みに失敗しました。JPEG または PNG 形式の写真でお試しください。'
+        '写真の読み込みに失敗しました。JPEG/PNG 形式でお試しください。'
       )
-      // input をリセット（壊れたHEICが送信されないように）
       e.target.value = ''
-      setPhotoPreview(null)
+      setSelectedFileName(null)
     } finally {
-      setCompressing(false)
+      setProcessing(false)
     }
   }
 
@@ -80,14 +88,33 @@ export function PublicRegistrationForm({
               （任意・後から追加可能）
             </span>
           </label>
-          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={photoPreview ?? '/default-vehicle.svg'}
-              alt={photoPreview ? '愛車プレビュー' : '愛車（写真未登録）'}
-              className="h-full w-full object-cover"
-            />
-            {compressing && (
+          <div className="relative w-full overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900">
+            {previewable && preview ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={preview}
+                alt="愛車プレビュー"
+                className="block max-h-[60vh] w-full object-contain"
+              />
+            ) : selectedFileName ? (
+              <div className="flex aspect-[4/3] flex-col items-center justify-center gap-3 p-6 text-center">
+                <div className="text-4xl">📎</div>
+                <p className="text-sm font-medium">{selectedFileName}</p>
+                <p className="text-xs text-zinc-500">
+                  iPhone写真（HEIC）はブラウザで直接プレビューできません
+                  <br />
+                  登録時にサーバーでJPEGに変換されます
+                </p>
+              </div>
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src="/default-vehicle.svg"
+                alt="愛車（写真未登録）"
+                className="block aspect-[4/3] w-full object-cover"
+              />
+            )}
+            {processing && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-sm text-white">
                 画像を準備中…
               </div>
@@ -98,7 +125,7 @@ export function PublicRegistrationForm({
             name="photo"
             accept="image/*,.heic,.heif"
             onChange={handlePhotoChange}
-            disabled={compressing}
+            disabled={processing}
             className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-zinc-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-zinc-800 disabled:opacity-50 dark:file:bg-white dark:file:text-black"
           />
           {photoError ? (
@@ -136,7 +163,7 @@ export function PublicRegistrationForm({
 
       <button
         type="submit"
-        disabled={pending || compressing}
+        disabled={pending || processing}
         className="w-full rounded-md bg-zinc-900 px-4 py-3 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
       >
         {pending ? '登録中…' : `${shopName}に登録する`}

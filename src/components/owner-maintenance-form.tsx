@@ -23,17 +23,17 @@ export function OwnerMaintenanceForm({
   action,
   record,
   submitLabel = '記録する',
-  existingAttachmentUrl,
 }: {
   action: ActionFn
   record?: MaintenanceRecord
   submitLabel?: string
-  existingAttachmentUrl?: string | null
 }) {
   const [state, formAction, pending] = useActionState(action, undefined)
   const [preview, setPreview] = useState<string | null>(
-    existingAttachmentUrl ?? record?.attachment_url ?? null
+    record?.attachment_url ?? null
   )
+  const [previewable, setPreviewable] = useState(!!record?.attachment_url)
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const [photoError, setPhotoError] = useState<string | null>(null)
 
@@ -41,21 +41,35 @@ export function OwnerMaintenanceForm({
     e: React.ChangeEvent<HTMLInputElement>
   ) {
     const file = e.target.files?.[0]
-    if (!file) return
+    if (!file) {
+      setSelectedFileName(null)
+      return
+    }
 
     setProcessing(true)
     setPhotoError(null)
+    setSelectedFileName(file.name)
     try {
       const processed = await processVehiclePhoto(file)
       const dt = new DataTransfer()
       dt.items.add(processed)
       e.target.files = dt.files
-      setPreview(URL.createObjectURL(processed))
+
+      // JPEG/PNG/WebPに変換できていればブラウザで安全にプレビュー可能
+      if (/image\/(jpe?g|png|webp)/i.test(processed.type)) {
+        setPreview(URL.createObjectURL(processed))
+        setPreviewable(true)
+      } else {
+        // HEICのままなどブラウザで表示できないケース → サーバー側で変換される
+        setPreview(null)
+        setPreviewable(false)
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : JSON.stringify(err)
       console.error('画像処理失敗:', msg, err)
       setPhotoError('写真の読み込みに失敗しました。JPEG/PNGでお試しください。')
       e.target.value = ''
+      setSelectedFileName(null)
     } finally {
       setProcessing(false)
     }
@@ -153,17 +167,30 @@ export function OwnerMaintenanceForm({
             （任意・見積もり書やレシート等）
           </span>
         </label>
-        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900">
-          {preview ? (
+
+        {/* 大きなプレビュー領域 */}
+        <div className="relative w-full overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900">
+          {previewable && preview ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={preview}
               alt="添付プレビュー"
-              className="h-full w-full object-contain"
+              className="block max-h-[60vh] w-full object-contain"
             />
+          ) : selectedFileName ? (
+            <div className="flex aspect-[4/3] flex-col items-center justify-center gap-3 p-6 text-center">
+              <div className="text-4xl">📎</div>
+              <p className="text-sm font-medium">{selectedFileName}</p>
+              <p className="text-xs text-zinc-500">
+                iPhone写真（HEIC）のためブラウザで直接プレビューできません
+                <br />
+                アップロード時にサーバーでJPEGに変換されます
+              </p>
+            </div>
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-xs text-zinc-400">
-              プレビュー
+            <div className="flex aspect-[4/3] flex-col items-center justify-center gap-2 p-6 text-center text-zinc-400">
+              <div className="text-3xl">🖼️</div>
+              <p className="text-sm">下のボタンから写真を選択</p>
             </div>
           )}
           {processing && (
@@ -172,6 +199,7 @@ export function OwnerMaintenanceForm({
             </div>
           )}
         </div>
+
         <input
           type="file"
           name="attachment"
