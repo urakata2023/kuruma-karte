@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { processImageServerSide } from '@/lib/image-server'
+import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 type State = { error?: string } | undefined
@@ -9,7 +10,6 @@ type State = { error?: string } | undefined
 /**
  * 住所文字列から緯度経度を取得（OpenStreetMap Nominatim 経由）。
  * 無料・APIキー不要だが、Nominatimの利用規約上 User-Agent 必須・1req/sec推奨。
- * Server Action として呼び出されるため、CORS制限を受けない。
  */
 export async function geocodeAddress(
   address: string
@@ -59,6 +59,33 @@ function parseFloat0(formData: FormData, key: string): number | null {
   if (!v) return null
   const n = Number(v)
   return Number.isFinite(n) ? n : null
+}
+
+/**
+ * 座標が空で住所がある場合、Nominatimで自動取得する。
+ * 既に座標があればそのまま返す。
+ */
+async function resolveCoordinates(
+  formData: FormData
+): Promise<{ latitude: number | null; longitude: number | null }> {
+  let latitude = parseFloat0(formData, 'latitude')
+  let longitude = parseFloat0(formData, 'longitude')
+
+  if (latitude == null || longitude == null) {
+    // place_name を address より優先（"芦ノ湖" だけで通る）
+    const place = parseString(formData, 'place_name')
+    const address = parseString(formData, 'address')
+    const query = place ?? address
+    if (query) {
+      const geo = await geocodeAddress(query)
+      if (geo) {
+        latitude = geo.lat
+        longitude = geo.lng
+      }
+    }
+  }
+
+  return { latitude, longitude }
 }
 
 async function resolveVehicleByToken(token: string) {
@@ -121,6 +148,9 @@ export async function createTouringRecord(
   )
   if (uploadError) return { error: uploadError }
 
+  // 座標を自動解決（住所/場所名から自動ジオコーディング）
+  const { latitude, longitude } = await resolveCoordinates(formData)
+
   const admin = createAdminClient()
   const { error } = await admin.from('touring_records').insert({
     vehicle_id: vehicle.id,
@@ -129,8 +159,8 @@ export async function createTouringRecord(
     title,
     place_name: parseString(formData, 'place_name'),
     address: parseString(formData, 'address'),
-    latitude: parseFloat0(formData, 'latitude'),
-    longitude: parseFloat0(formData, 'longitude'),
+    latitude,
+    longitude,
     photo_url,
     memo: parseString(formData, 'memo'),
     created_by: 'customer',
@@ -173,6 +203,8 @@ export async function updateTouringRecord(
   if (uploadError) return { error: uploadError }
   const photo_url = newPhoto ?? record.photo_url
 
+  const { latitude, longitude } = await resolveCoordinates(formData)
+
   const { error } = await admin
     .from('touring_records')
     .update({
@@ -180,8 +212,8 @@ export async function updateTouringRecord(
       touring_date,
       place_name: parseString(formData, 'place_name'),
       address: parseString(formData, 'address'),
-      latitude: parseFloat0(formData, 'latitude'),
-      longitude: parseFloat0(formData, 'longitude'),
+      latitude,
+      longitude,
       photo_url,
       memo: parseString(formData, 'memo'),
     })
@@ -217,4 +249,42 @@ export async function deleteTouringRecord(
   if (error) throw new Error(error.message)
 
   redirect(`/my/${token}`)
+}
+
+/**
+ * 既存記録に対して、住所/場所名から座標を再取得して上書き保存する。
+ * 既に座標がある記録でも強制的に再取得する（住所変更後の更新用）。
+ */
+export async function refreshTouringCoordinates(
+  token: string,
+  recordId: string
+): Promise<void> {
+  const vehicle = await resolveVehicleByToken(token)
+  if (!vehicle) throw new Error('リンクが無効です')
+
+  const admin = createAdminClient()
+  const { data: record } = await admin
+    .from('touring_records')
+    .select('id, place_name, address')
+    .eq('id', recordId)
+    .eq('vehicle_id', vehicle.id)
+    .maybeSingle()
+  if (!record) throw new Error('記録が見つかりません')
+
+  const query = record.place_name ?? record.address
+  if (!query) throw new Error('住所も場所の名前も登録されていません')
+
+  const geo = await geocodeAddress(query)
+  if (!geo) throw new Error('住所が見つかりませんでした')
+
+  const { error } = await admin
+    .from('touring_records')
+    .update({
+      latitude: geo.lat,
+      longitude: geo.lng,
+    })
+    .eq('id', recordId)
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/my/${token}`)
 }

@@ -287,10 +287,21 @@ export default async function OwnerMyPage({
           </Link>
         </div>
 
-        {/* マップ：座標が入っている記録が1件以上あれば表示 */}
-        {tourings.some((t) => t.latitude != null && t.longitude != null) && (
+        {/* マップ表示 or 案内 */}
+        {tourings.length > 0 &&
+        tourings.some((t) => t.latitude != null && t.longitude != null) ? (
           <TouringMap records={tourings} />
-        )}
+        ) : tourings.length > 0 ? (
+          <div className="rounded-xl border border-dashed border-zinc-300 p-5 text-center text-sm text-zinc-500 dark:border-zinc-700">
+            🗺️ 地図ピンを表示するには、各記録に住所か場所の名前が必要です。
+            <br />
+            <span className="text-xs">
+              下のカードの「📍 この場所をマップに追加」を押すと、住所から座標を自動取得します。
+              <br />
+              ※ 新規記録は保存時に自動で地図に追加されます。
+            </span>
+          </div>
+        ) : null}
 
         <TouringList records={tourings} token={token} />
       </section>
