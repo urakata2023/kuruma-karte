@@ -113,6 +113,9 @@ export function MaintenanceTimeline({
                       </div>
                       <p className="mt-1 text-xs text-zinc-500">
                         {formatDateJP(r.performed_on)}
+                        <span className="ml-2 text-zinc-400">
+                          記録：{formatDateTimeJP(r.created_at)}
+                        </span>
                       </p>
                     </div>
                     {isOwner && (
@@ -203,4 +206,15 @@ function FilterChip({
 function formatDateJP(dateStr: string): string {
   const [y, m, d] = dateStr.split('-')
   return `${y}年${m}月${d}日`
+}
+
+/** ISO timestamp を「YYYY/MM/DD HH:mm」形式に整形 */
+function formatDateTimeJP(isoStr: string): string {
+  const d = new Date(isoStr)
+  const y = d.getFullYear()
+  const mo = String(d.getMonth() + 1).padStart(2, '0')
+  const da = String(d.getDate()).padStart(2, '0')
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  return `${y}/${mo}/${da} ${hh}:${mm}`
 }

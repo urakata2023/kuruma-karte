@@ -132,10 +132,13 @@ export default async function VehicleDetailPage({
               <li key={r.id} className="py-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 space-y-1">
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                       <p className="font-medium">{r.title}</p>
                       <span className="text-xs text-zinc-500">
                         {formatDateJP(r.performed_on)}
+                      </span>
+                      <span className="text-xs text-zinc-400">
+                        記録：{formatDateTimeJP(r.created_at)}
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-3 text-xs text-zinc-500">
@@ -192,4 +195,14 @@ function formatDate(d: string | null): string {
 function formatDateJP(d: string): string {
   const [y, m, day] = d.split('-')
   return `${y}年${m}月${day}日`
+}
+
+function formatDateTimeJP(isoStr: string): string {
+  const d = new Date(isoStr)
+  const y = d.getFullYear()
+  const mo = String(d.getMonth() + 1).padStart(2, '0')
+  const da = String(d.getDate()).padStart(2, '0')
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  return `${y}/${mo}/${da} ${hh}:${mm}`
 }
