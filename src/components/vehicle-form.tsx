@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { processVehiclePhoto } from '@/lib/image-process'
+import { QrScanModal, type QRScanResult } from '@/components/qr-scan-modal'
 import type { Vehicle } from '@/lib/types'
 
 type State = { error?: string } | undefined
@@ -24,6 +25,56 @@ export function VehicleForm({
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const [photoError, setPhotoError] = useState<string | null>(null)
+
+  // QR読み取り
+  const [qrOpen, setQrOpen] = useState(false)
+  const [qrNotice, setQrNotice] = useState<string | null>(null)
+
+  function handleQrScan(result: QRScanResult) {
+    const fields = result.parsedFields
+    const applied: string[] = []
+
+    /**
+     * 指定したnameのinputにvalueを代入 (uncontrolled inputなのでDOM操作)
+     */
+    function setValue(name: string, value: string, label: string) {
+      const el = document.getElementsByName(name)[0] as
+        | HTMLInputElement
+        | undefined
+      if (el) {
+        el.value = value
+        el.dispatchEvent(new Event('input', { bubbles: true }))
+        applied.push(`${label}: ${value}`)
+      }
+    }
+
+    // 候補があれば反映
+    if (fields._plate_candidate) {
+      setValue('plate_number', fields._plate_candidate, 'ナンバー')
+    }
+    if (fields._date_candidate) {
+      setValue('inspection_expires_on', fields._date_candidate, '車検満了日')
+    }
+    if (fields._first_reg_candidate) {
+      setValue(
+        'first_registration_ym',
+        fields._first_reg_candidate,
+        '初度登録'
+      )
+    }
+    // 完全一致するkeyがあればそのまま (将来の独自仕様対応)
+    if (fields.model) setValue('model', fields.model, '車種')
+
+    setQrOpen(false)
+    if (applied.length === 0) {
+      setQrNotice(
+        `QRから自動入力できる項目が見つかりませんでした。読み取り内容: ${result.raw.slice(0, 80)}${result.raw.length > 80 ? '...' : ''}`
+      )
+    } else {
+      setQrNotice(`✓ 自動入力しました: ${applied.join(' / ')}`)
+    }
+    setTimeout(() => setQrNotice(null), 8000)
+  }
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -60,6 +111,34 @@ export function VehicleForm({
 
   return (
     <form action={formAction} className="space-y-4">
+      {/* 車検証QRから一発入力 */}
+      <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950">
+        <button
+          type="button"
+          onClick={() => setQrOpen(true)}
+          className="flex w-full items-center justify-between text-left"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium text-blue-900 dark:text-blue-200">
+            📸 車検証QRコードから自動入力
+          </span>
+          <span className="text-xs text-blue-700 dark:text-blue-300">タップして起動 →</span>
+        </button>
+        <p className="mt-1 text-xs text-blue-700 dark:text-blue-300">
+          車検証券面のQRコードを読み取ると、ナンバー・車検満了日・初度登録を自動入力します
+        </p>
+        {qrNotice && (
+          <p className="mt-2 rounded-md bg-white px-3 py-2 text-xs text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
+            {qrNotice}
+          </p>
+        )}
+      </div>
+
+      <QrScanModal
+        open={qrOpen}
+        onClose={() => setQrOpen(false)}
+        onScan={handleQrScan}
+      />
+
       <div className="space-y-2">
         <label className="block text-sm font-medium">
           愛車の写真
