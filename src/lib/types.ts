@@ -38,6 +38,7 @@ export type Vehicle = {
   purchased_on: string | null
   last_oil_change_on: string | null
   photo_url: string | null
+  view_token: string
   created_at: string
   updated_at: string
 }

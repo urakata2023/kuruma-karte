@@ -118,6 +118,14 @@ export default async function CustomerDetailPage({
                     </p>
                   </div>
                   <div className="flex items-center gap-3 whitespace-nowrap">
+                    <a
+                      href={`/my/${v.view_token}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium text-blue-600 underline dark:text-blue-400"
+                    >
+                      マイページ
+                    </a>
                     <Link
                       href={`/vehicles/${v.id}/edit`}
                       className="text-sm font-medium underline"
