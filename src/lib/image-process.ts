@@ -5,35 +5,30 @@ import imageCompression from 'browser-image-compression'
 /**
  * 画像ファイルを「マイページ表示に最適な形」に整える：
  * 1. HEIC/HEIF（iPhoneデフォルト）を JPEG に変換
+ *    - heic-to (libheif-js最新) を使用。古い heic2any より対応形式が広い
  * 2. 1MB以下 / 長辺1920px以下に圧縮
- *
- * heic2any はクライアント専用なので dynamic import。
  */
 export async function processVehiclePhoto(file: File): Promise<File> {
-  // 1. HEIC/HEIF判定
-  const isHeic =
-    /image\/(heic|heif)/i.test(file.type) ||
-    /\.(heic|heif)$/i.test(file.name)
-
   let workingFile: File = file
 
+  // ファイル先頭バイトで判定（拡張子/typeより堅牢）
+  const heicMod = await import('heic-to')
+  const isHeic = await heicMod.isHeic(file).catch(() => false)
+
   if (isHeic) {
-    // dynamic import でSSRバンドルを汚さない
-    const heic2any = (await import('heic2any')).default
-    const converted = await heic2any({
+    const jpegBlob = await heicMod.heicTo({
       blob: file,
-      toType: 'image/jpeg',
+      type: 'image/jpeg',
       quality: 0.85,
     })
-    const blob = Array.isArray(converted) ? converted[0] : converted
     workingFile = new File(
-      [blob],
+      [jpegBlob],
       file.name.replace(/\.(heic|heif)$/i, '.jpg'),
       { type: 'image/jpeg' }
     )
   }
 
-  // 2. 圧縮（既にJPEGならそのまま、HEIC由来でも再圧縮）
+  // 圧縮（JPEG/PNG/WebP も対象）
   const compressed = await imageCompression(workingFile, {
     maxSizeMB: 1,
     maxWidthOrHeight: 1920,
