@@ -253,14 +253,19 @@ export async function deleteTouringRecord(
 
 /**
  * 既存記録に対して、住所/場所名から座標を再取得して上書き保存する。
- * 既に座標がある記録でも強制的に再取得する（住所変更後の更新用）。
+ * エラー時もthrowせず、redirect で /my/[token] にバナー表示用パラメータを付けて戻す。
  */
 export async function refreshTouringCoordinates(
   token: string,
   recordId: string
 ): Promise<void> {
+  const back = (params: string) => redirect(`/my/${token}?${params}`)
+
   const vehicle = await resolveVehicleByToken(token)
-  if (!vehicle) throw new Error('リンクが無効です')
+  if (!vehicle) {
+    back('toast=err&msg=' + encodeURIComponent('リンクが無効です'))
+    return
+  }
 
   const admin = createAdminClient()
   const { data: record } = await admin
@@ -269,22 +274,57 @@ export async function refreshTouringCoordinates(
     .eq('id', recordId)
     .eq('vehicle_id', vehicle.id)
     .maybeSingle()
-  if (!record) throw new Error('記録が見つかりません')
+  if (!record) {
+    back('toast=err&msg=' + encodeURIComponent('記録が見つかりません'))
+    return
+  }
 
-  const query = record.place_name ?? record.address
-  if (!query) throw new Error('住所も場所の名前も登録されていません')
+  // place_name → address の順で試す
+  const candidates = [record.place_name, record.address].filter(
+    (q): q is string => !!q && q.trim().length > 0
+  )
+  if (candidates.length === 0) {
+    back(
+      'toast=err&msg=' +
+        encodeURIComponent('住所も場所の名前も登録されていません')
+    )
+    return
+  }
 
-  const geo = await geocodeAddress(query)
-  if (!geo) throw new Error('住所が見つかりませんでした')
+  let geo: { lat: number; lng: number } | null = null
+  let triedFirst = false
+  for (const q of candidates) {
+    if (triedFirst) {
+      // 連続リクエストはNominatimのレート制限考慮で軽くwait
+      await new Promise((r) => setTimeout(r, 1100))
+    }
+    const r = await geocodeAddress(q)
+    if (r) {
+      geo = { lat: r.lat, lng: r.lng }
+      break
+    }
+    triedFirst = true
+  }
+
+  if (!geo) {
+    back(
+      'toast=err&msg=' +
+        encodeURIComponent(
+          `場所が見つかりませんでした(${candidates.join(' / ')})。もう少し具体的な住所をお試しください`
+        )
+    )
+    return
+  }
 
   const { error } = await admin
     .from('touring_records')
-    .update({
-      latitude: geo.lat,
-      longitude: geo.lng,
-    })
+    .update({ latitude: geo.lat, longitude: geo.lng })
     .eq('id', recordId)
-  if (error) throw new Error(error.message)
+  if (error) {
+    back('toast=err&msg=' + encodeURIComponent('保存に失敗: ' + error.message))
+    return
+  }
 
   revalidatePath(`/my/${token}`)
+  back('toast=ok&msg=' + encodeURIComponent('地図に追加しました'))
 }

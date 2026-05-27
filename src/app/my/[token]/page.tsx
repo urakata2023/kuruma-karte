@@ -11,6 +11,7 @@ import { OwnerHeroPhoto } from '@/components/owner-hero-photo'
 import { PlateDisplay } from '@/components/plate-display'
 import { TouringList } from '@/components/touring-list'
 import { TouringMap } from '@/components/touring-map'
+import { ToastBanner } from '@/components/toast-banner'
 import {
   calcMonthlyAverageKm,
   extractMileagePoints,
@@ -74,10 +75,13 @@ export async function generateMetadata({
 
 export default async function OwnerMyPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>
+  searchParams: Promise<{ toast?: string; msg?: string }>
 }) {
   const { token } = await params
+  const { toast, msg } = await searchParams
   const admin = createAdminClient()
 
   const { data: vehicle } = await admin
@@ -153,6 +157,11 @@ export default async function OwnerMyPage({
 
   return (
     <div className="flex flex-1 flex-col">
+      {/* Server Action 経由の結果バナー */}
+      {(toast === 'ok' || toast === 'err') && msg && (
+        <ToastBanner type={toast} message={msg} />
+      )}
+
       {/* ヘッダー */}
       <header className="border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-black">
         <div className="mx-auto flex max-w-2xl items-center justify-between">
