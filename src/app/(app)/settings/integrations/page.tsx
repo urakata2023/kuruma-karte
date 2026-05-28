@@ -32,11 +32,22 @@ export default async function IntegrationsPage({
 
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-10">
-      <header className="mb-8 space-y-2">
-        <p className="text-xs text-zinc-500">設定 / 外部連携</p>
-        <h1 className="text-2xl font-semibold">🔗 外部連携 (LINE / Liny)</h1>
-        <p className="text-sm text-zinc-500">
-          LINE公式アカウントと Liny を連携して、車検通知や予約申し込みを LINE で受け取れます。
+      <header className="mb-8 space-y-1">
+        <p
+          className="text-eyebrow"
+          style={{ color: 'var(--ink-tertiary)' }}
+        >
+          Settings / Integrations
+        </p>
+        <h1
+          className="text-headline"
+          style={{ color: 'var(--ink)' }}
+        >
+          🔗 外部連携
+        </h1>
+        <p className="text-sm" style={{ color: 'var(--ink-subtle)' }}>
+          LINE公式アカウントと Liny / L Message を連携して、車検通知や
+          予約申し込みを LINE で受け取れます。
         </p>
       </header>
 

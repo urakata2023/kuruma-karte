@@ -80,82 +80,77 @@ export default async function ReservationsPage({
         <ToastBanner type={toast} message={msg} />
       )}
 
-      <header>
-        <h1 className="text-2xl font-semibold">🗓️ 予約管理</h1>
-        <p className="mt-1 text-sm text-zinc-500">
+      <header className="space-y-1">
+        <p className="text-eyebrow" style={{ color: 'var(--ink-tertiary)' }}>
+          Reservations
+        </p>
+        <h1 className="text-headline" style={{ color: 'var(--ink)' }}>
+          🗓️ 予約管理
+        </h1>
+        <p className="text-sm" style={{ color: 'var(--ink-subtle)' }}>
           お客様マイページからの入庫予約リクエストを管理します。
         </p>
       </header>
 
-      <section>
-        <h2 className="mb-3 text-base font-semibold">
-          🔔 承認待ち（{requested.length}件）
-        </h2>
-        {requested.length === 0 ? (
-          <p className="rounded-md border border-dashed border-zinc-300 p-4 text-sm text-zinc-500 dark:border-zinc-700">
-            新着リクエストはありません
-          </p>
-        ) : (
-          <ul className="space-y-3">
-            {requested.map((r) => (
-              <ReservationCard key={r.id} reservation={r} />
-            ))}
-          </ul>
-        )}
-      </section>
+      <SectionGroup
+        title="🔔 承認待ち"
+        count={requested.length}
+        emptyText="新着リクエストはありません"
+        accent="red"
+      >
+        {requested.map((r) => (
+          <ReservationCard key={r.id} reservation={r} />
+        ))}
+      </SectionGroup>
 
-      <section>
-        <h2 className="mb-3 text-base font-semibold">
-          📨 お客様返答待ち（{pendingCustomer.length}件）
-        </h2>
-        {pendingCustomer.length === 0 ? (
-          <p className="rounded-md border border-dashed border-zinc-300 p-4 text-sm text-zinc-500 dark:border-zinc-700">
-            再提案中の予約はありません
-          </p>
-        ) : (
-          <ul className="space-y-3">
-            {pendingCustomer.map((r) => (
-              <ReservationCard key={r.id} reservation={r} />
-            ))}
-          </ul>
-        )}
-      </section>
+      <SectionGroup
+        title="📨 お客様返答待ち"
+        count={pendingCustomer.length}
+        emptyText="再提案中の予約はありません"
+        accent="purple"
+      >
+        {pendingCustomer.map((r) => (
+          <ReservationCard key={r.id} reservation={r} />
+        ))}
+      </SectionGroup>
 
-      <section>
-        <h2 className="mb-3 text-base font-semibold">
-          ✅ 確定済み（{confirmed.length}件）
-        </h2>
-        {confirmed.length === 0 ? (
-          <p className="rounded-md border border-dashed border-zinc-300 p-4 text-sm text-zinc-500 dark:border-zinc-700">
-            確定済みの予約はありません
-          </p>
-        ) : (
-          <ul className="space-y-3">
-            {confirmed.map((r) => (
-              <ReservationCard key={r.id} reservation={r} />
-            ))}
-          </ul>
-        )}
-      </section>
+      <SectionGroup
+        title="✅ 確定済み"
+        count={confirmed.length}
+        emptyText="確定済みの予約はありません"
+        accent="blue"
+      >
+        {confirmed.map((r) => (
+          <ReservationCard key={r.id} reservation={r} />
+        ))}
+      </SectionGroup>
 
       {done.length > 0 && (
         <section>
-          <h2 className="mb-3 text-base font-semibold">
-            📦 過去のリクエスト（{done.length}件）
+          <h2
+            className="mb-3 text-eyebrow"
+            style={{ color: 'var(--ink-tertiary)' }}
+          >
+            📦 過去のリクエスト ({done.length}件)
           </h2>
           <ul className="space-y-2">
             {done.slice(0, 20).map((r) => (
               <li
                 key={r.id}
-                className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm dark:border-zinc-800 dark:bg-zinc-900"
+                className="rounded-lg border px-4 py-3 text-sm"
+                style={{
+                  background: 'var(--surface-2)',
+                  borderColor: 'var(--hairline)',
+                }}
               >
                 <Link
                   href={`/customers/${r.customer_id}`}
                   className="font-medium hover:underline"
+                  style={{ color: 'var(--ink)' }}
                 >
                   {r.customer_name}
                 </Link>{' '}
-                <span className="text-zinc-500">
+                <span style={{ color: 'var(--ink-subtle)' }}>
                   / {r.vehicle_model ?? '車両'} / {r.purpose} ·{' '}
                   {statusLabel(r.status)}
                 </span>
@@ -165,6 +160,61 @@ export default async function ReservationsPage({
         </section>
       )}
     </main>
+  )
+}
+
+function SectionGroup({
+  title,
+  count,
+  emptyText,
+  accent,
+  children,
+}: {
+  title: string
+  count: number
+  emptyText: string
+  accent: 'red' | 'purple' | 'blue'
+  children: React.ReactNode
+}) {
+  const dotColor = {
+    red: '#ef4444',
+    purple: '#a855f7',
+    blue: '#3b82f6',
+  }[accent]
+  return (
+    <section>
+      <div className="mb-3 flex items-center gap-2">
+        <span
+          className="inline-block h-2 w-2 rounded-full"
+          style={{ background: dotColor }}
+        />
+        <h2
+          className="text-eyebrow"
+          style={{ color: 'var(--ink-tertiary)' }}
+        >
+          {title}
+          <span
+            className="ml-1.5 tabular-figs"
+            style={{ color: 'var(--ink)' }}
+          >
+            {count}
+          </span>
+        </h2>
+      </div>
+      {count === 0 ? (
+        <p
+          className="rounded-lg border border-dashed p-4 text-sm"
+          style={{
+            borderColor: 'var(--hairline)',
+            color: 'var(--ink-subtle)',
+          }}
+        >
+          {emptyText}
+        </p>
+      ) : (
+        <ul className="space-y-3">{children}</ul>
+      )}
+    </section>
   )
 }
 

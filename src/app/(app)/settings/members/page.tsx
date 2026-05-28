@@ -71,10 +71,20 @@ export default async function MembersPage() {
 
   return (
     <main className="mx-auto w-full max-w-3xl space-y-8 px-6 py-10">
-      <header>
-        <p className="text-xs text-zinc-500">設定 / スタッフ管理</p>
-        <h1 className="mt-1 text-2xl font-semibold">👥 スタッフ管理</h1>
-        <p className="mt-2 text-sm text-zinc-500">
+      <header className="space-y-1">
+        <p
+          className="text-eyebrow"
+          style={{ color: 'var(--ink-tertiary)' }}
+        >
+          Settings / Members
+        </p>
+        <h1
+          className="text-headline"
+          style={{ color: 'var(--ink)' }}
+        >
+          👥 スタッフ管理
+        </h1>
+        <p className="text-sm" style={{ color: 'var(--ink-subtle)' }}>
           整備士・事務員を招待して店舗を一緒に運営できます。
         </p>
       </header>

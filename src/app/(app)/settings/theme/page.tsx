@@ -15,21 +15,34 @@ export default async function ThemeSettingsPage({
   const { saved } = await searchParams
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-10">
-      <header className="mb-8 space-y-2">
-        <p className="text-xs text-zinc-500">設定 / テーマ</p>
-        <h1 className="text-2xl font-semibold tracking-tight">🎨 店舗テーマ</h1>
-        <p className="text-sm text-zinc-500">
-          管理画面とお客様のマイページ（
-          <code className="rounded bg-zinc-100 px-1 py-0.5 text-xs dark:bg-zinc-900">
+    <main className="mx-auto w-full max-w-4xl px-6 py-10">
+      <header className="mb-8 space-y-1">
+        <p
+          className="text-eyebrow"
+          style={{ color: 'var(--ink-tertiary)' }}
+        >
+          Settings / Theme
+        </p>
+        <h1
+          className="text-headline"
+          style={{ color: 'var(--ink)' }}
+        >
+          🎨 店舗テーマ
+        </h1>
+        <p className="text-sm" style={{ color: 'var(--ink-subtle)' }}>
+          管理画面とお客様のマイページ (
+          <code
+            className="rounded px-1 py-0.5 font-mono text-xs"
+            style={{ background: 'var(--surface-2)', color: 'var(--ink)' }}
+          >
             /my/[token]
           </code>
-          ）に反映されます。お店のブランディングに合わせて選んでください。
+          ) に反映されます。お店のブランディングに合わせて選んでください。
         </p>
       </header>
 
       {saved === '1' && (
-        <div className="mb-6 rounded-md border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-700 dark:bg-green-950 dark:text-green-300">
+        <div className="mb-6 rounded-lg border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-700 dark:bg-green-950 dark:text-green-300">
           ✓ テーマを保存しました
         </div>
       )}

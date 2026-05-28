@@ -34,9 +34,22 @@ export default async function BillingPage({
 
   return (
     <main className="mx-auto w-full max-w-4xl space-y-8 px-6 py-10">
-      <header>
-        <p className="text-xs text-zinc-500">設定 / 料金プラン</p>
-        <h1 className="mt-1 text-2xl font-semibold">💳 料金プラン・お支払い</h1>
+      <header className="space-y-1">
+        <p
+          className="text-eyebrow"
+          style={{ color: 'var(--ink-tertiary)' }}
+        >
+          Settings / Billing
+        </p>
+        <h1
+          className="text-headline"
+          style={{ color: 'var(--ink)' }}
+        >
+          💳 料金プラン・お支払い
+        </h1>
+        <p className="text-sm" style={{ color: 'var(--ink-subtle)' }}>
+          現在のご契約状況と、プランのアップグレード/ダウングレード
+        </p>
       </header>
 
       {checkout === 'success' && (

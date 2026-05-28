@@ -181,11 +181,22 @@ export default async function OwnerMyPage({
       )}
 
       {/* ヘッダー */}
-      <header className="border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-black">
+      <header
+        className="border-b px-6 py-4 backdrop-blur"
+        style={{
+          background: 'color-mix(in srgb, var(--canvas) 85%, transparent)',
+          borderColor: 'var(--hairline)',
+        }}
+      >
         <div className="mx-auto flex max-w-2xl items-center justify-between">
           <div>
-            <p className="text-xs text-zinc-500">{shop?.name ?? '車屋'}</p>
-            <p className="text-base font-semibold">
+            <p className="text-eyebrow" style={{ color: 'var(--ink-tertiary)' }}>
+              {shop?.name ?? '車屋'}
+            </p>
+            <p
+              className="mt-1 text-base font-semibold"
+              style={{ color: 'var(--ink)' }}
+            >
               {customer?.name ?? 'お客様'} 様
             </p>
           </div>
@@ -198,7 +209,13 @@ export default async function OwnerMyPage({
       </header>
 
       {/* ヒーロー：愛車写真（未登録ならタップで追加） */}
-      <section className="relative bg-gradient-to-br from-zinc-100 to-zinc-300 dark:from-zinc-800 dark:to-zinc-950">
+      <section
+        className="relative"
+        style={{
+          background:
+            'linear-gradient(135deg, var(--surface-2) 0%, var(--surface-3) 100%)',
+        }}
+      >
         <div className="mx-auto max-w-2xl px-6 py-12">
           <OwnerHeroPhoto
             token={token}

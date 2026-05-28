@@ -44,29 +44,53 @@ export default async function VehicleDetailPage({
   const latestMileage = records.find((r) => r.mileage_km != null)?.mileage_km
 
   return (
-    <main className="mx-auto w-full max-w-3xl space-y-8 px-6 py-10">
+    <main className="mx-auto w-full max-w-4xl space-y-8 px-6 py-10">
       <div>
         {customer && (
           <Link
             href={`/customers/${customer.id}`}
-            className="text-sm text-zinc-500 hover:underline"
+            className="text-sm hover:underline"
+            style={{ color: 'var(--ink-subtle)' }}
           >
             ← {customer.name} 様の詳細
           </Link>
         )}
-        <h1 className="mt-2 text-2xl font-semibold">
+        <p
+          className="mt-3 text-eyebrow"
+          style={{ color: 'var(--ink-tertiary)' }}
+        >
+          Vehicle
+        </p>
+        <h1
+          className="mt-1 text-headline"
+          style={{ color: 'var(--ink)' }}
+        >
           {vehicle.model || 'お車'}
         </h1>
         {vehicle.plate_number && (
-          <p className="mt-1 text-sm text-zinc-500">{vehicle.plate_number}</p>
+          <p
+            className="mt-1 text-sm tabular-figs"
+            style={{ color: 'var(--ink-subtle)' }}
+          >
+            {vehicle.plate_number}
+          </p>
         )}
       </div>
 
       {/* 車両サマリー */}
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-black">
+      <section
+        className="rounded-xl border p-6"
+        style={{
+          background: 'var(--surface-1)',
+          borderColor: 'var(--hairline)',
+        }}
+      >
         <div className="flex items-start justify-between gap-4">
           <div className="flex gap-4">
-            <div className="relative h-24 w-32 flex-shrink-0 overflow-hidden rounded-md border border-zinc-200 dark:border-zinc-800">
+            <div
+              className="relative h-28 w-36 flex-shrink-0 overflow-hidden rounded-lg border"
+              style={{ borderColor: 'var(--hairline)' }}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={vehicle.photo_url ?? '/default-vehicle.svg'}
@@ -74,27 +98,32 @@ export default async function VehicleDetailPage({
                 className="h-full w-full object-cover"
               />
             </div>
-            <div className="space-y-1 text-sm">
-              <p className="text-zinc-500">
-                車検満了：{formatDate(vehicle.inspection_expires_on)}
-              </p>
-              <p className="text-zinc-500">
-                購入日：{formatDate(vehicle.purchased_on)}
-              </p>
+            <dl className="space-y-2 text-sm">
+              <Field
+                label="車検満了"
+                value={formatDate(vehicle.inspection_expires_on)}
+              />
+              <Field
+                label="購入日"
+                value={formatDate(vehicle.purchased_on)}
+              />
               {latestMileage != null && (
-                <p className="text-zinc-500">
-                  最新走行距離：
-                  <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                    {latestMileage.toLocaleString()} km
-                  </span>
-                </p>
+                <Field
+                  label="最新走行距離"
+                  value={`${latestMileage.toLocaleString()} km`}
+                  emphasis
+                />
               )}
-            </div>
+            </dl>
           </div>
           <div className="flex flex-col items-end gap-2 whitespace-nowrap">
             <Link
               href={`/vehicles/${vehicle.id}/edit`}
-              className="text-sm font-medium underline"
+              className="rounded-md border px-3 py-1.5 text-xs font-medium transition-colors"
+              style={{
+                borderColor: 'var(--hairline)',
+                color: 'var(--ink-muted)',
+              }}
             >
               車両を編集
             </Link>
@@ -102,9 +131,13 @@ export default async function VehicleDetailPage({
               href={`/my/${vehicle.view_token}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm font-medium text-blue-600 underline dark:text-blue-400"
+              className="rounded-md px-3 py-1.5 text-xs font-semibold"
+              style={{
+                background: 'var(--theme-accent)',
+                color: 'var(--theme-accent-fg)',
+              }}
             >
-              お客様マイページ
+              お客様マイページ ↗
             </a>
           </div>
         </div>
@@ -113,7 +146,14 @@ export default async function VehicleDetailPage({
       {/* AIアシスタント (Phase 11) — 店主向け次の一手 */}
       <Suspense
         fallback={
-          <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 text-center text-xs text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900">
+          <div
+            className="rounded-xl border border-dashed px-4 py-5 text-center text-xs"
+            style={{
+              borderColor: 'var(--hairline)',
+              background: 'var(--surface-2)',
+              color: 'var(--ink-subtle)',
+            }}
+          >
             🤖 AIが {customer?.name ?? 'お客様'} 様への提案を考えています…
           </div>
         }
@@ -126,39 +166,77 @@ export default async function VehicleDetailPage({
       </Suspense>
 
       {/* 整備記録 */}
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-black">
+      <section
+        className="rounded-xl border p-6"
+        style={{
+          background: 'var(--surface-1)',
+          borderColor: 'var(--hairline)',
+        }}
+      >
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold">
-            整備記録（{records.length}件）
-          </h2>
+          <div>
+            <p
+              className="text-eyebrow"
+              style={{ color: 'var(--ink-tertiary)' }}
+            >
+              Maintenance Records
+            </p>
+            <h2 className="mt-1 text-title" style={{ color: 'var(--ink)' }}>
+              整備記録 ({records.length}件)
+            </h2>
+          </div>
           <Link
             href={`/vehicles/${vehicle.id}/maintenance/new`}
-            className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+            className="rounded-md px-3 py-1.5 text-sm font-semibold"
+            style={{
+              background: 'var(--theme-primary)',
+              color: 'var(--theme-primary-fg)',
+            }}
           >
             ＋ 整備を記録
           </Link>
         </div>
 
         {records.length === 0 ? (
-          <p className="mt-4 text-sm text-zinc-500">
+          <p
+            className="mt-4 text-sm"
+            style={{ color: 'var(--ink-subtle)' }}
+          >
             まだ整備記録がありません。「＋ 整備を記録」から追加できます。
           </p>
         ) : (
-          <ul className="mt-4 divide-y divide-zinc-200 dark:divide-zinc-800">
+          <ul
+            className="mt-5 divide-y"
+            style={{ borderColor: 'var(--hairline)' }}
+          >
             {records.map((r) => (
-              <li key={r.id} className="py-4">
+              <li key={r.id} className="py-4 first:pt-0">
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 space-y-1">
+                  <div className="flex-1 space-y-1.5">
                     <div className="flex flex-wrap items-center gap-3">
-                      <p className="font-medium">{r.title}</p>
-                      <span className="text-xs text-zinc-500">
+                      <p
+                        className="font-semibold"
+                        style={{ color: 'var(--ink)' }}
+                      >
+                        {r.title}
+                      </p>
+                      <span
+                        className="text-xs tabular-figs"
+                        style={{ color: 'var(--ink-subtle)' }}
+                      >
                         {formatDateJP(r.performed_on)}
                       </span>
-                      <span className="text-xs text-zinc-400">
+                      <span
+                        className="text-xs tabular-figs"
+                        style={{ color: 'var(--ink-tertiary)' }}
+                      >
                         記録：{formatDateTimeJP(r.created_at)}
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-3 text-xs text-zinc-500">
+                    <div
+                      className="flex flex-wrap gap-3 text-xs tabular-figs"
+                      style={{ color: 'var(--ink-subtle)' }}
+                    >
                       {r.mileage_km != null && (
                         <span>走行距離：{r.mileage_km.toLocaleString()} km</span>
                       )}
@@ -167,12 +245,18 @@ export default async function VehicleDetailPage({
                       )}
                     </div>
                     {r.description && (
-                      <p className="whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">
+                      <p
+                        className="whitespace-pre-wrap text-sm"
+                        style={{ color: 'var(--ink-muted)' }}
+                      >
                         {r.description}
                       </p>
                     )}
                     {r.parts && (
-                      <p className="whitespace-pre-wrap text-xs text-zinc-500">
+                      <p
+                        className="whitespace-pre-wrap text-xs"
+                        style={{ color: 'var(--ink-subtle)' }}
+                      >
                         交換部品：{r.parts}
                       </p>
                     )}
@@ -181,6 +265,7 @@ export default async function VehicleDetailPage({
                     <Link
                       href={`/vehicles/${vehicle.id}/maintenance/${r.id}/edit`}
                       className="text-sm font-medium underline"
+                      style={{ color: 'var(--ink-muted)' }}
                     >
                       編集
                     </Link>
@@ -200,6 +285,36 @@ export default async function VehicleDetailPage({
         )}
       </section>
     </main>
+  )
+}
+
+function Field({
+  label,
+  value,
+  emphasis,
+}: {
+  label: string
+  value: string
+  emphasis?: boolean
+}) {
+  return (
+    <div>
+      <dt
+        className="text-eyebrow"
+        style={{ color: 'var(--ink-tertiary)' }}
+      >
+        {label}
+      </dt>
+      <dd
+        className="mt-0.5"
+        style={{
+          color: emphasis ? 'var(--ink)' : 'var(--ink-muted)',
+          fontWeight: emphasis ? 600 : 400,
+        }}
+      >
+        {value}
+      </dd>
+    </div>
   )
 }
 
