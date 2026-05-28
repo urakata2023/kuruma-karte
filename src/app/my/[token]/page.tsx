@@ -7,7 +7,7 @@ import { MileageChart } from '@/components/mileage-chart'
 import { VehicleGallery } from '@/components/vehicle-gallery'
 import { ShareButton } from '@/components/share-button'
 import { AlwaysWithYou } from '@/components/always-with-you'
-import { OwnerHeroPhoto } from '@/components/owner-hero-photo'
+import { OwnerHeroCarousel } from '@/components/owner-hero-carousel'
 import { PlateCollapsible } from '@/components/plate-collapsible'
 import { TouringList } from '@/components/touring-list'
 import { CollapsibleMap } from '@/components/collapsible-map'
@@ -250,12 +250,22 @@ export default async function OwnerMyPage({
             {vehicle.model ?? 'お車'}
           </h1>
 
-          {/* 写真エリア */}
+          {/* 写真エリア (最大3枚切替カルーセル) */}
           <div className="mt-7">
-            <OwnerHeroPhoto
+            <OwnerHeroCarousel
               token={token}
-              currentUrl={vehicle.photo_url}
               alt={vehicle.model ?? '愛車'}
+              storageKey={vehicle.id}
+              photos={(() => {
+                // ヒーロー候補: vehicles.photo_url + vehicle_photos の上位2枚 (重複除去)、最大3枚
+                const urls: string[] = []
+                if (vehicle.photo_url) urls.push(vehicle.photo_url)
+                for (const p of photos) {
+                  if (!urls.includes(p.photo_url)) urls.push(p.photo_url)
+                  if (urls.length >= 3) break
+                }
+                return urls
+              })()}
             />
           </div>
 
