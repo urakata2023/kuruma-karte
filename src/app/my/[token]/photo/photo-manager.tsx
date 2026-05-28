@@ -1,6 +1,12 @@
 'use client'
 
-import { useActionState, useRef, useState, useTransition } from 'react'
+import {
+  useActionState,
+  useOptimistic,
+  useRef,
+  useState,
+  useTransition,
+} from 'react'
 import { processVehiclePhoto } from '@/lib/image-process'
 import {
   addGalleryPhoto,
@@ -13,10 +19,15 @@ import type { VehiclePhoto } from '@/lib/types'
 
 type State = { error?: string } | undefined
 
+type OptimisticAction =
+  | { type: 'reorder'; id: string; direction: 'up' | 'down' }
+  | { type: 'delete'; id: string }
+  | { type: 'set-hero'; id: string }
+
 export function PhotoManager({
   token,
   heroPhotoUrl,
-  photos,
+  photos: initialPhotos,
 }: {
   token: string
   heroPhotoUrl: string | null
@@ -33,6 +44,26 @@ export function PhotoManager({
   )
   const formRef = useRef<HTMLFormElement>(null)
   const [, startTransition] = useTransition()
+  const [optimisticHeroUrl, setOptimisticHeroUrl] = useState(heroPhotoUrl)
+
+  // 楽観的並び替え (即時反映)
+  const [optimisticPhotos, applyOptimistic] = useOptimistic<
+    VehiclePhoto[],
+    OptimisticAction
+  >(initialPhotos, (current, act) => {
+    if (act.type === 'reorder') {
+      const idx = current.findIndex((p) => p.id === act.id)
+      const swapIdx = act.direction === 'up' ? idx - 1 : idx + 1
+      if (idx < 0 || swapIdx < 0 || swapIdx >= current.length) return current
+      const next = [...current]
+      ;[next[idx], next[swapIdx]] = [next[swapIdx], next[idx]]
+      return next
+    }
+    if (act.type === 'delete') {
+      return current.filter((p) => p.id !== act.id)
+    }
+    return current
+  })
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -44,7 +75,6 @@ export function PhotoManager({
       const dt = new DataTransfer()
       dt.items.add(processed)
       e.target.files = dt.files
-      // フォーム自動送信
       formRef.current?.requestSubmit()
     } catch (err) {
       console.error('写真処理失敗:', err)
@@ -53,20 +83,55 @@ export function PhotoManager({
     }
   }
 
-  function handleAction(
-    label: string,
-    fn: () => Promise<void>
-  ): () => void {
-    return () => {
-      if (label.includes('削除') && !confirm('この写真を削除しますか？')) return
-      startTransition(async () => {
-        try {
-          await fn()
-        } catch (e) {
-          alert(e instanceof Error ? e.message : 'エラー')
+  // View Transition でブラウザネイティブの並び替えアニメ
+  function withViewTransition(fn: () => void) {
+    if (
+      typeof document !== 'undefined' &&
+      typeof (document as Document & { startViewTransition?: unknown })
+        .startViewTransition === 'function'
+    ) {
+      ;(
+        document as unknown as {
+          startViewTransition: (cb: () => void) => void
         }
-      })
+      ).startViewTransition(fn)
+    } else {
+      fn()
     }
+  }
+
+  function handleReorder(id: string, direction: 'up' | 'down') {
+    startTransition(() => {
+      withViewTransition(() => {
+        applyOptimistic({ type: 'reorder', id, direction })
+      })
+      // 裏で DB 更新 (失敗時はリロードで巻き戻る)
+      reorderGalleryPhoto(token, id, direction).catch((e) =>
+        console.error('reorder failed:', e)
+      )
+    })
+  }
+
+  function handleDelete(id: string) {
+    if (!confirm('この写真を削除しますか？')) return
+    startTransition(() => {
+      withViewTransition(() => {
+        applyOptimistic({ type: 'delete', id })
+      })
+      deleteGalleryPhoto(token, id).catch((e) =>
+        console.error('delete failed:', e)
+      )
+    })
+  }
+
+  function handleSetHero(photoUrl: string, id: string) {
+    startTransition(() => {
+      setOptimisticHeroUrl(photoUrl) // ヒーロー写真も即時更新
+      applyOptimistic({ type: 'set-hero', id }) // 並びは変えない
+      setAsHeroPhoto(token, photoUrl).catch((e) =>
+        console.error('set hero failed:', e)
+      )
+    })
   }
 
   return (
@@ -100,7 +165,7 @@ export function PhotoManager({
       </form>
 
       {/* ヒーロー写真 */}
-      {heroPhotoUrl && (
+      {optimisticHeroUrl && (
         <section>
           <p
             className="text-eyebrow mb-2"
@@ -115,13 +180,14 @@ export function PhotoManager({
               // @ts-expect-error - CSS variable
               '--tw-ring-color':
                 'color-mix(in srgb, var(--theme-accent) 40%, transparent)',
+              viewTransitionName: 'hero-photo',
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={heroPhotoUrl}
+              src={optimisticHeroUrl}
               alt="メイン写真"
-              className="block aspect-[4/3] w-full object-cover"
+              className="block aspect-[4/3] w-full object-cover transition-opacity duration-200"
             />
           </div>
         </section>
@@ -133,9 +199,9 @@ export function PhotoManager({
           className="text-eyebrow mb-2"
           style={{ color: 'var(--ink-tertiary)' }}
         >
-          ギャラリー ({photos.length}枚)
+          ギャラリー ({optimisticPhotos.length}枚)
         </p>
-        {photos.length === 0 ? (
+        {optimisticPhotos.length === 0 ? (
           <div
             className="rounded-xl border border-dashed p-8 text-center text-sm"
             style={{
@@ -147,13 +213,15 @@ export function PhotoManager({
           </div>
         ) : (
           <ul className="space-y-3">
-            {photos.map((p, i) => (
+            {optimisticPhotos.map((p, i) => (
               <li
                 key={p.id}
                 className="flex items-center gap-3 rounded-xl border p-3"
                 style={{
                   background: 'var(--surface-1)',
                   borderColor: 'var(--hairline)',
+                  // View Transition で個別要素の位置移動を自動アニメ
+                  viewTransitionName: `photo-${p.id}`,
                 }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -162,8 +230,11 @@ export function PhotoManager({
                   alt="ギャラリー写真"
                   className="h-16 w-20 flex-shrink-0 rounded-md object-cover"
                 />
-                <div className="flex-1 text-xs" style={{ color: 'var(--ink-subtle)' }}>
-                  <p>{i + 1} 番目</p>
+                <div
+                  className="flex-1 text-xs"
+                  style={{ color: 'var(--ink-subtle)' }}
+                >
+                  <p className="tabular-figs">{i + 1} 番目</p>
                   {i < 2 && (
                     <p
                       className="mt-0.5"
@@ -175,39 +246,27 @@ export function PhotoManager({
                 </div>
                 <div className="flex flex-wrap items-center gap-1">
                   <IconButton
-                    onClick={handleAction(
-                      'up',
-                      reorderGalleryPhoto.bind(null, token, p.id, 'up')
-                    )}
+                    onClick={() => handleReorder(p.id, 'up')}
                     disabled={i === 0}
                     title="上へ"
                   >
                     ↑
                   </IconButton>
                   <IconButton
-                    onClick={handleAction(
-                      'down',
-                      reorderGalleryPhoto.bind(null, token, p.id, 'down')
-                    )}
-                    disabled={i === photos.length - 1}
+                    onClick={() => handleReorder(p.id, 'down')}
+                    disabled={i === optimisticPhotos.length - 1}
                     title="下へ"
                   >
                     ↓
                   </IconButton>
                   <IconButton
-                    onClick={handleAction(
-                      'hero',
-                      setAsHeroPhoto.bind(null, token, p.photo_url)
-                    )}
+                    onClick={() => handleSetHero(p.photo_url, p.id)}
                     title="メイン写真にする"
                   >
                     ⭐
                   </IconButton>
                   <IconButton
-                    onClick={handleAction(
-                      '削除',
-                      deleteGalleryPhoto.bind(null, token, p.id)
-                    )}
+                    onClick={() => handleDelete(p.id)}
                     title="削除"
                     danger
                   >
@@ -242,11 +301,9 @@ function IconButton({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className="inline-flex h-8 w-8 items-center justify-center rounded-md border text-sm transition-colors disabled:opacity-30"
+      className="inline-flex h-9 w-9 items-center justify-center rounded-md border text-base transition-all active:scale-90 disabled:opacity-30"
       style={{
-        borderColor: danger
-          ? 'rgba(239,68,68,0.4)'
-          : 'var(--hairline)',
+        borderColor: danger ? 'rgba(239,68,68,0.4)' : 'var(--hairline)',
         color: danger ? '#ef4444' : 'var(--ink-muted)',
         background: 'transparent',
       }}

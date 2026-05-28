@@ -331,3 +331,19 @@ body {
   }
 }
 
+/* ───────────────────────────────────────────────────────
+ * View Transitions API (Phase M+)
+ * 写真管理ページでの並び替えアニメーション用。
+ * 対応ブラウザ: Chrome/Edge 111+, Safari 18+
+ * 非対応ブラウザでは瞬間切替 (オプティミスティック更新で体感は十分速い)
+ * ─────────────────────────────────────────────────────── */
+::view-transition-group(*) {
+  animation-duration: 280ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 200ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
