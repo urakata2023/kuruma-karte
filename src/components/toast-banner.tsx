@@ -16,6 +16,15 @@ export function ToastBanner({
   const [visible, setVisible] = useState(true)
 
   useEffect(() => {
+    // URL から toast/msg パラメータを即クリア (リロードで再表示されないように)
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      if (url.searchParams.has('toast') || url.searchParams.has('msg')) {
+        url.searchParams.delete('toast')
+        url.searchParams.delete('msg')
+        window.history.replaceState({}, '', url.toString())
+      }
+    }
     const t = setTimeout(() => setVisible(false), 6000)
     return () => clearTimeout(t)
   }, [])
