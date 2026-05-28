@@ -259,26 +259,10 @@ export default async function OwnerMyPage({
             />
           </div>
 
-          {/* ナンバープレート風カード */}
+          {/* 物理ナンバープレート (本物の構造を再現) */}
           {vehicle.plate_number && (
-            <div className="mt-6 flex justify-center">
-              <div
-                className="inline-flex items-center gap-3 rounded-lg border-2 px-5 py-3 shadow-md"
-                style={{
-                  background: 'var(--surface-1)',
-                  borderColor: 'var(--theme-accent)',
-                }}
-              >
-                <span
-                  className="text-eyebrow"
-                  style={{ color: 'var(--ink-tertiary)' }}
-                >
-                  Plate
-                </span>
-                <span style={{ color: 'var(--ink)' }}>
-                  <PlateDisplay plate={vehicle.plate_number} />
-                </span>
-              </div>
+            <div className="mt-7 flex justify-center">
+              <PlateDisplay plate={vehicle.plate_number} />
             </div>
           )}
         </div>
