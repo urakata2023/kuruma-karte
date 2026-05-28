@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from 'react'
 import { processVehiclePhoto } from '@/lib/image-process'
 import { updateVehiclePhotoByToken } from '@/app/my/[token]/photo/actions'
+import { LoadingOverlay } from '@/components/loading-overlay'
 
 /**
  * マイページのヒーロー写真エリア。
@@ -69,7 +70,7 @@ export function OwnerHeroPhoto({
           />
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/40 backdrop-blur-[2px] dark:bg-black/40">
             {busy ? (
-              <div className="text-sm font-medium">アップロード中…</div>
+              <LoadingOverlay label="愛車の写真を準備中" />
             ) : (
               <>
                 <div className="text-5xl">📷</div>
@@ -108,7 +109,7 @@ export function OwnerHeroPhoto({
         <img src={currentUrl} alt={alt} className="h-full w-full object-cover" />
         {busy && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white">
-            アップロード中…
+            <LoadingOverlay label="アップロード中" />
           </div>
         )}
         <button

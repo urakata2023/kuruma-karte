@@ -6,6 +6,7 @@ import {
   CertPhotoModal,
   type CertOcrFields,
 } from '@/components/cert-photo-modal'
+import { SubmitButton } from '@/components/submit-button'
 import type { Vehicle } from '@/lib/types'
 
 type State = { error?: string } | undefined
@@ -263,13 +264,13 @@ export function VehicleForm({
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={pending || processing}
+      <SubmitButton
+        pending={pending || processing}
+        pendingLabel="保存中"
         className="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
       >
-        {pending ? '保存中…' : submitLabel}
-      </button>
+        {submitLabel}
+      </SubmitButton>
     </form>
   )
 }

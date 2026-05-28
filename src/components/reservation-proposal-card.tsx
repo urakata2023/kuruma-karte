@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { acceptShopProposal } from '@/app/my/[token]/reservation/actions'
 import type { Reservation, DateCandidate } from '@/lib/types'
 import { slotLabel } from '@/lib/reservation-slots'
+import { SubmitButton } from '@/components/submit-button'
 
 /**
  * お客様マイページの「店主からの再提案カード」 (Phase G)
@@ -84,14 +85,15 @@ export function ReservationProposalCard({
           ))}
         </div>
 
-        <button
+        <SubmitButton
           type="button"
           onClick={handleAccept}
-          disabled={pending}
+          pending={pending}
+          pendingLabel="送信中"
           className="mt-4 w-full rounded-md bg-amber-600 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
         >
-          {pending ? '送信中…' : 'この候補で予約を確定する'}
-        </button>
+          この候補で予約を確定する
+        </SubmitButton>
 
         <p className="mt-2 text-center text-[10px] opacity-60">
           どの候補も難しい場合は、お電話でお店までご相談ください

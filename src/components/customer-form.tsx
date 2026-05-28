@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import type { Customer } from '@/lib/types'
+import { SubmitButton } from '@/components/submit-button'
 
 type State = { error?: string } | undefined
 type ActionFn = (prev: State, formData: FormData) => Promise<State>
@@ -59,13 +60,13 @@ export function CustomerForm({
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={pending}
+      <SubmitButton
+        pending={pending}
+        pendingLabel="保存中"
         className="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
       >
-        {pending ? '保存中…' : submitLabel}
-      </button>
+        {submitLabel}
+      </SubmitButton>
     </form>
   )
 }

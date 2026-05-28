@@ -6,6 +6,7 @@ import {
   CertPhotoModal,
   type CertOcrFields,
 } from '@/components/cert-photo-modal'
+import { SubmitButton } from '@/components/submit-button'
 
 type State = { error?: string } | undefined
 type ActionFn = (prev: State, formData: FormData) => Promise<State>
@@ -252,13 +253,13 @@ export function PublicRegistrationForm({
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={pending || processing}
+      <SubmitButton
+        pending={pending || processing}
+        pendingLabel="登録中"
         className="w-full rounded-md bg-zinc-900 px-4 py-3 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
       >
-        {pending ? '登録中…' : `${shopName}に登録する`}
-      </button>
+        {shopName}に登録する
+      </SubmitButton>
 
       <p className="text-center text-xs text-zinc-500">
         登録すると、{shopName}があなたの車検時期などをお知らせできるようになります。

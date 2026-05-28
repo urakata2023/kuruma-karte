@@ -122,3 +122,54 @@ body {
   color: var(--foreground);
 }
 
+/* ───────────────────────────────────────────────────────
+ * iOS Safari の input フォーカス時自動ズーム防止 (Phase H)
+ *
+ * font-size が 16px 未満だと iOS Safari がフォーカス時に
+ * 自動的にズームインしてしまう。これを 16px に強制することで
+ * 自動ズームを完全に防ぐ。CSS だけで解決、視覚的な影響は最小限。
+ * (デザイン上 text-sm/text-xs を使ってる要素は iOS だけ 16px に上書き)
+ * ─────────────────────────────────────────────────────── */
+@supports (-webkit-touch-callout: none) {
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="password"],
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  input[type="search"],
+  input[type="url"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* ───────────────────────────────────────────────────────
+ * ローディング演出 keyframes (Phase H)
+ * SubmitButton のシマー光 + ドットの bounce 用
+ * ─────────────────────────────────────────────────────── */
+@keyframes karte-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+@keyframes karte-bounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  40% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
