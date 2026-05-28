@@ -50,6 +50,7 @@ export function Sidebar({
   ]
 
   const navTools: NavItem[] = [
+    { href: '/broadcast', icon: '📣', label: '一括メール配信' },
     { href: '/flyer', icon: '📄', label: 'チラシ印刷' },
   ]
 

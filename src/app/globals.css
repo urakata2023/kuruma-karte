@@ -265,6 +265,15 @@ body {
   border-color: var(--hairline-strong);
 }
 
+/* スクロールバー非表示 (横スワイプギャラリー用) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* テーマ適用 wrapper: data-theme要素自体にも背景色を伝播させる */
 [data-theme]:not(:root) {
   background: var(--background);

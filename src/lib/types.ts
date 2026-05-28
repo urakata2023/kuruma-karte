@@ -33,7 +33,9 @@ export type Customer = {
   phone: string | null
   email: string | null
   line_user_id: string | null
+  line_display_name: string | null
   memo: string | null
+  tags: string[]
   created_at: string
   updated_at: string
 }

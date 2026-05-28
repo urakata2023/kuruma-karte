@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { processVehiclePhoto } from '@/lib/image-process'
 import { updateVehiclePhotoByToken } from '@/app/my/[token]/photo/actions'
 import { LoadingOverlay } from '@/components/loading-overlay'
@@ -23,6 +23,24 @@ export function OwnerHeroPhoto({
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [progress, setProgress] = useState(0)
+
+  // 擬似プログレス: 進捗％は実測できないがユーザに「動いてる感」を与える
+  // 0→90% を約3秒かけて加算、完了で100%
+  useEffect(() => {
+    if (!processing && !isPending) {
+      setProgress(0)
+      return
+    }
+    setProgress(15)
+    const timer = setInterval(() => {
+      setProgress((p) => {
+        if (p < 90) return p + Math.max(1, Math.floor((90 - p) * 0.08))
+        return p
+      })
+    }, 200)
+    return () => clearInterval(timer)
+  }, [processing, isPending])
 
   async function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -70,7 +88,10 @@ export function OwnerHeroPhoto({
           />
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/40 backdrop-blur-[2px] dark:bg-black/40">
             {busy ? (
-              <LoadingOverlay label="愛車の写真を準備中" />
+              <LoadingOverlay
+                label="愛車の写真を準備中"
+                progress={progress}
+              />
             ) : (
               <>
                 <div className="text-5xl">📷</div>

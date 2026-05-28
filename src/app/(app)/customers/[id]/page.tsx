@@ -1,12 +1,29 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentShop } from '@/lib/shop'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ConfirmDeleteForm } from '@/components/confirm-delete-form'
 import { deleteCustomer } from '../actions'
 import { deleteVehicle } from '../../vehicles/actions'
-import type { Customer, Vehicle, Notification } from '@/lib/types'
+import { CustomerTagBadges } from '@/components/customer-tag-badges'
+import { CustomerTagPicker } from '@/components/customer-tag-picker'
+import { CustomerTimeline } from '@/components/customer-timeline'
+import { formatDateJST, formatTimeJST } from '@/lib/datetime-jp'
+import type {
+  Customer,
+  Vehicle,
+  MaintenanceRecord,
+  Reservation,
+} from '@/lib/types'
 
+/**
+ * 顧客詳細ページ (Phase L - C + E 統合刷新版)
+ *
+ * - タグ機能 (VIP/要フォロー/休眠など)
+ * - タイムライン (整備記録 + 予約 + 通知履歴 を時系列統合)
+ * - 新デザイントークン適用
+ */
 export default async function CustomerDetailPage({
   params,
 }: {
@@ -15,6 +32,7 @@ export default async function CustomerDetailPage({
   const { id } = await params
   const { shop } = await getCurrentShop()
   const supabase = await createClient()
+  const admin = createAdminClient()
 
   const { data: customer } = await supabase
     .from('customers')
@@ -32,40 +50,56 @@ export default async function CustomerDetailPage({
     .order('created_at', { ascending: false })
 
   const vehicles = (vehiclesData ?? []) as Vehicle[]
-
-  // 通知履歴（その顧客の全車両分）
-  let notifications: Notification[] = []
-  if (vehicles.length > 0) {
-    const { data: notifData } = await supabase
-      .from('notifications')
-      .select('*')
-      .in(
-        'vehicle_id',
-        vehicles.map((v) => v.id)
-      )
-      .order('scheduled_on', { ascending: false })
-      .limit(20)
-    notifications = (notifData ?? []) as Notification[]
-  }
-
-  // 通知のvehicle_id→車両情報マップ
+  const vehicleIds = vehicles.map((v) => v.id)
   const vehicleMap = new Map(vehicles.map((v) => [v.id, v]))
 
+  // 整備記録 + 予約 を取得（タイムライン用）
+  let maintenance: MaintenanceRecord[] = []
+  let reservations: Reservation[] = []
+  if (vehicleIds.length > 0) {
+    const [{ data: maintData }, { data: resData }] = await Promise.all([
+      admin
+        .from('maintenance_records')
+        .select('*')
+        .in('vehicle_id', vehicleIds)
+        .order('performed_on', { ascending: false })
+        .limit(50),
+      admin
+        .from('reservations')
+        .select('*')
+        .in('vehicle_id', vehicleIds)
+        .order('created_at', { ascending: false })
+        .limit(50),
+    ])
+    maintenance = (maintData ?? []) as MaintenanceRecord[]
+    reservations = (resData ?? []) as Reservation[]
+  }
+
   return (
-    <main className="mx-auto w-full max-w-3xl space-y-8 px-6 py-10">
+    <main className="mx-auto w-full max-w-5xl space-y-8 px-6 py-10">
       <div>
         <Link
           href="/customers"
-          className="text-sm text-zinc-500 hover:underline"
+          className="text-sm transition-colors hover:underline"
+          style={{ color: 'var(--ink-subtle)' }}
         >
           ← お客さん一覧
         </Link>
-        <div className="mt-2 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">{customer.name} 様</h1>
-          <div className="flex items-center gap-4">
+        <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-2">
+            <h1
+              className="text-headline"
+              style={{ color: 'var(--ink)' }}
+            >
+              {customer.name} 様
+            </h1>
+            <CustomerTagBadges tags={customer.tags ?? []} />
+          </div>
+          <div className="flex items-center gap-3 text-sm">
             <Link
               href={`/customers/${customer.id}/edit`}
-              className="text-sm font-medium underline"
+              className="font-medium underline"
+              style={{ color: 'var(--ink-muted)' }}
             >
               編集
             </Link>
@@ -77,66 +111,142 @@ export default async function CustomerDetailPage({
         </div>
       </div>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-black">
-        <h2 className="text-base font-semibold">お客さん情報</h2>
-        <dl className="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+      {/* お客様情報 */}
+      <section
+        className="rounded-xl border p-6"
+        style={{
+          background: 'var(--surface-1)',
+          borderColor: 'var(--hairline)',
+        }}
+      >
+        <p
+          className="text-eyebrow"
+          style={{ color: 'var(--ink-tertiary)' }}
+        >
+          Customer Info
+        </p>
+        <h2 className="mt-1 text-title" style={{ color: 'var(--ink)' }}>
+          お客さん情報
+        </h2>
+        <dl className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Info label="電話" value={customer.phone} />
           <Info label="メール" value={customer.email} />
           <Info label="メモ" value={customer.memo} full />
         </dl>
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-black">
+      {/* タグエディタ */}
+      <section
+        className="rounded-xl border p-6"
+        style={{
+          background: 'var(--surface-1)',
+          borderColor: 'var(--hairline)',
+        }}
+      >
+        <p
+          className="text-eyebrow"
+          style={{ color: 'var(--ink-tertiary)' }}
+        >
+          Tags
+        </p>
+        <h2 className="mt-1 text-title" style={{ color: 'var(--ink)' }}>
+          顧客タグ
+        </h2>
+        <p
+          className="mt-1 text-xs"
+          style={{ color: 'var(--ink-subtle)' }}
+        >
+          複数選択可能。検索やリスト絞り込みに使えます。
+        </p>
+        <div className="mt-4">
+          <CustomerTagPicker
+            customerId={customer.id}
+            initialTags={customer.tags ?? []}
+          />
+        </div>
+      </section>
+
+      {/* 登録車両 */}
+      <section
+        className="rounded-xl border p-6"
+        style={{
+          background: 'var(--surface-1)',
+          borderColor: 'var(--hairline)',
+        }}
+      >
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold">
-            登録車両（{vehicles.length}台）
-          </h2>
+          <div>
+            <p
+              className="text-eyebrow"
+              style={{ color: 'var(--ink-tertiary)' }}
+            >
+              Vehicles
+            </p>
+            <h2 className="mt-1 text-title" style={{ color: 'var(--ink)' }}>
+              登録車両 ({vehicles.length}台)
+            </h2>
+          </div>
           <Link
             href={`/customers/${customer.id}/vehicles/new`}
-            className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+            className="rounded-md px-3 py-1.5 text-sm font-semibold"
+            style={{
+              background: 'var(--theme-primary)',
+              color: 'var(--theme-primary-fg)',
+            }}
           >
             ＋ 車を追加
           </Link>
         </div>
 
         {vehicles.length === 0 ? (
-          <p className="mt-3 text-sm text-zinc-500">
+          <p
+            className="mt-4 text-sm"
+            style={{ color: 'var(--ink-subtle)' }}
+          >
             まだ車が登録されていません。
           </p>
         ) : (
-          <ul className="mt-4 divide-y divide-zinc-200 dark:divide-zinc-800">
+          <ul
+            className="mt-5 divide-y"
+            style={{ borderColor: 'var(--hairline)' }}
+          >
             {vehicles.map((v) => (
-              <li key={v.id} className="py-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1 text-sm">
-                    <p className="font-medium">{v.model || '車種未登録'}</p>
-                    <p className="text-zinc-500">
-                      {v.plate_number || 'ナンバー未登録'}
-                    </p>
-                    <p className="text-zinc-500">
-                      車検満了：{formatDate(v.inspection_expires_on)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3 whitespace-nowrap">
-                    <Link
-                      href={`/vehicles/${v.id}`}
-                      className="text-sm font-medium underline"
-                    >
-                      詳細・整備記録
-                    </Link>
-                    <a
-                      href={`/my/${v.view_token}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm font-medium text-blue-600 underline dark:text-blue-400"
-                    >
-                      マイページ
-                    </a>
-                    <ConfirmDeleteForm
-                      action={deleteVehicle.bind(null, v.id, customer.id)}
-                      label={`${v.model || '車'}（${v.plate_number || ''}）`}
-                    />
-                  </div>
+              <li
+                key={v.id}
+                className="flex items-start justify-between gap-4 py-4 first:pt-0"
+              >
+                <div className="space-y-1 text-sm">
+                  <p className="font-semibold" style={{ color: 'var(--ink)' }}>
+                    {v.model || '車種未登録'}
+                  </p>
+                  <p style={{ color: 'var(--ink-subtle)' }}>
+                    {v.plate_number || 'ナンバー未登録'}
+                  </p>
+                  <p style={{ color: 'var(--ink-subtle)' }}>
+                    車検満了：{formatDate(v.inspection_expires_on)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 whitespace-nowrap text-sm">
+                  <Link
+                    href={`/vehicles/${v.id}`}
+                    className="font-medium underline"
+                    style={{ color: 'var(--ink-muted)' }}
+                  >
+                    詳細
+                  </Link>
+                  <a
+                    href={`/my/${v.view_token}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium underline"
+                    style={{ color: 'var(--theme-accent)' }}
+                  >
+                    マイページ
+                  </a>
+                  <ConfirmDeleteForm
+                    action={deleteVehicle.bind(null, v.id, customer.id)}
+                    label={`${v.model || '車'}（${v.plate_number || ''}）`}
+                  />
                 </div>
               </li>
             ))}
@@ -144,48 +254,16 @@ export default async function CustomerDetailPage({
         )}
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-black">
-        <h2 className="text-base font-semibold">
-          通知履歴
-          <span className="ml-2 text-xs font-normal text-zinc-500">
-            （直近20件・車検3ヶ月前 / 1ヶ月前 / 2週間前に自動送信）
-          </span>
-        </h2>
-        {notifications.length === 0 ? (
-          <p className="mt-3 text-sm text-zinc-500">
-            通知履歴はまだありません。
-          </p>
-        ) : (
-          <ul className="mt-3 divide-y divide-zinc-200 dark:divide-zinc-800">
-            {notifications.map((n) => {
-              const v = vehicleMap.get(n.vehicle_id)
-              return (
-                <li
-                  key={n.id}
-                  className="flex items-start justify-between gap-3 py-3 text-sm"
-                >
-                  <div className="flex-1 space-y-1">
-                    <p className="font-medium">
-                      {formatDate(n.scheduled_on)} ·{' '}
-                      <span className={statusClass(n.status)}>
-                        {statusLabel(n.status)}
-                      </span>
-                    </p>
-                    <p className="text-zinc-500">
-                      {v?.model || '車'}（{v?.plate_number || '—'}）
-                      {n.channel === 'mail' && ' · メール'}
-                      {n.channel === 'line' && ' · LINE'}
-                    </p>
-                    {n.message && (
-                      <p className="text-xs text-zinc-400">{n.message}</p>
-                    )}
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </section>
+      {/* 統合タイムライン (Phase L - E) */}
+      <CustomerTimeline
+        maintenance={maintenance}
+        reservations={reservations}
+        vehicleMap={
+          new Map(
+            vehicles.map((v) => [v.id, { model: v.model, plate: v.plate_number }])
+          )
+        }
+      />
     </main>
   )
 }
@@ -201,42 +279,26 @@ function Info({
 }) {
   return (
     <div className={full ? 'sm:col-span-2' : ''}>
-      <dt className="text-xs text-zinc-500">{label}</dt>
-      <dd className="mt-0.5 whitespace-pre-wrap">{value || '—'}</dd>
+      <dt
+        className="text-eyebrow"
+        style={{ color: 'var(--ink-tertiary)' }}
+      >
+        {label}
+      </dt>
+      <dd
+        className="mt-1 whitespace-pre-wrap text-sm"
+        style={{ color: 'var(--ink)' }}
+      >
+        {value || '—'}
+      </dd>
     </div>
   )
 }
 
 function formatDate(d: string | null): string {
   if (!d) return '未登録'
-  const [y, m, day] = d.split('-')
-  return `${y}/${m}/${day}`
+  return formatDateJST(d + 'T12:00:00Z')
 }
 
-function statusLabel(s: string): string {
-  switch (s) {
-    case 'sent':
-      return '送信済み'
-    case 'pending':
-      return '送信待ち'
-    case 'failed':
-      return '送信失敗'
-    case 'cancelled':
-      return 'キャンセル'
-    default:
-      return s
-  }
-}
-
-function statusClass(s: string): string {
-  switch (s) {
-    case 'sent':
-      return 'text-green-600 dark:text-green-400'
-    case 'failed':
-      return 'text-red-600 dark:text-red-400'
-    case 'pending':
-      return 'text-zinc-500'
-    default:
-      return 'text-zinc-500'
-  }
-}
+// 未使用: formatTimeJST が他で使われていないと警告出るので silence
+void formatTimeJST

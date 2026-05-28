@@ -60,6 +60,37 @@ export async function updateCustomer(
   redirect(`/customers/${id}`)
 }
 
+/**
+ * 顧客タグ一括更新 (Phase L - C)
+ */
+export async function updateCustomerTags(
+  id: string,
+  tags: string[]
+): Promise<void> {
+  const { shop } = await getCurrentShop()
+  const supabase = await createClient()
+  // 許可されたタグだけ受け入れ
+  const allowed = new Set([
+    'vip',
+    'follow_up',
+    'dormant',
+    'new',
+    'regular',
+    'careful',
+  ])
+  const clean = tags.filter((t) => allowed.has(t))
+
+  const { error } = await supabase
+    .from('customers')
+    .update({ tags: clean })
+    .eq('id', id)
+    .eq('shop_id', shop.id)
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/customers/${id}`)
+  revalidatePath('/customers')
+}
+
 export async function deleteCustomer(id: string): Promise<void> {
   const { shop } = await getCurrentShop()
   const supabase = await createClient()
