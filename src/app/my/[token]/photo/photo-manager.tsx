@@ -7,6 +7,7 @@ import {
   useState,
   useTransition,
 } from 'react'
+import Link from 'next/link'
 import { processVehiclePhoto } from '@/lib/image-process'
 import {
   addGalleryPhoto,
@@ -278,6 +279,27 @@ export function PhotoManager({
           </ul>
         )}
       </section>
+
+      {/* 確定 CTA (大型・スマホで親指届く位置) */}
+      <div className="sticky bottom-4 pt-4">
+        <Link
+          href={`/my/${token}`}
+          className="block w-full rounded-xl px-4 py-4 text-center text-base font-semibold shadow-2xl backdrop-blur-md transition-transform active:scale-[0.98]"
+          style={{
+            background: 'var(--theme-primary)',
+            color: 'var(--theme-primary-fg)',
+            border: '1px solid color-mix(in srgb, var(--theme-accent) 30%, transparent)',
+          }}
+        >
+          ✓ 確定してマイページへ戻る
+        </Link>
+        <p
+          className="mt-2 text-center text-[10px]"
+          style={{ color: 'var(--ink-tertiary)' }}
+        >
+          変更は自動で保存されています
+        </p>
+      </div>
     </div>
   )
 }
