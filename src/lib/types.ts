@@ -12,6 +12,16 @@ export type Shop = {
   line_channel_token: string | null
   registration_token: string
   theme: string // ThemeId (Phase 10) — マイページ/管理画面のカラーリング
+  // Phase C: LINE/Liny 連携
+  line_channel_access_token: string | null
+  line_owner_user_id: string | null
+  liny_api_key: string | null
+  liny_workspace_id: string | null
+  // Phase D: Stripe サブスク
+  stripe_subscription_id: string | null
+  subscription_status: string | null
+  current_period_end: string | null
+  trial_ends_at: string | null
   created_at: string
   updated_at: string
 }

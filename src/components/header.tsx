@@ -28,6 +28,9 @@ export function Header({ shopName }: { shopName: string }) {
             <Link href="/settings/integrations" className="hover:text-zinc-900 dark:hover:text-white">
               🔗 連携
             </Link>
+            <Link href="/billing" className="hover:text-zinc-900 dark:hover:text-white">
+              💳 料金
+            </Link>
             <Link href="/flyer" className="hover:text-zinc-900 dark:hover:text-white">
               📄 チラシ
             </Link>
