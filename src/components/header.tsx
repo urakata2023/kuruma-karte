@@ -1,7 +1,13 @@
 import Link from 'next/link'
 import { logout } from '@/app/auth/actions'
 
-export function Header({ shopName }: { shopName: string }) {
+export function Header({
+  shopName,
+  pendingReservationCount = 0,
+}: {
+  shopName: string
+  pendingReservationCount?: number
+}) {
   return (
     <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-6 py-4">
@@ -16,8 +22,16 @@ export function Header({ shopName }: { shopName: string }) {
             <Link href="/customers" className="hover:text-zinc-900 dark:hover:text-white">
               お客さん
             </Link>
-            <Link href="/reservations" className="hover:text-zinc-900 dark:hover:text-white">
+            <Link
+              href="/reservations"
+              className="relative inline-flex items-center gap-1.5 hover:text-zinc-900 dark:hover:text-white"
+            >
               🗓️ 予約
+              {pendingReservationCount > 0 && (
+                <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                  {pendingReservationCount}
+                </span>
+              )}
             </Link>
             <Link href="/activity" className="hover:text-zinc-900 dark:hover:text-white">
               📜 履歴

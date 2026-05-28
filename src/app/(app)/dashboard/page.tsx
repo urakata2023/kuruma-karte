@@ -1,8 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentShop } from '@/lib/shop'
 import { QrDisplay } from '@/components/qr-display'
 import { DemoDataPanel } from '@/components/demo-data-panel'
 import { TodayTasks } from '@/components/today-tasks'
+import { DashboardReservationSummary } from '@/components/dashboard-reservation-summary'
+import type { Reservation } from '@/lib/types'
 
 type UpcomingVehicle = {
   id: string
@@ -90,9 +93,74 @@ export default async function DashboardPage() {
       }
     })
 
+  // 予約サマリ用フェッチ (Phase K)
+  const admin = createAdminClient()
+  const horizon30 = new Date(today.getTime() + 30 * 24 * 3600 * 1000)
+    .toISOString()
+    .slice(0, 10)
+  const { data: allRes } = await admin
+    .from('reservations')
+    .select('*')
+    .eq('shop_id', shop.id)
+    .in('status', ['pending_shop', 'requested', 'pending_customer', 'confirmed'])
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  const reservationRows = (allRes ?? []) as Reservation[]
+
+  // 顧客名を取得
+  const resCustomerIds = Array.from(
+    new Set(reservationRows.map((r) => r.customer_id))
+  )
+  const resCustMap = new Map<string, string>()
+  if (resCustomerIds.length > 0) {
+    const { data } = await admin
+      .from('customers')
+      .select('id, name')
+      .in('id', resCustomerIds)
+    for (const c of (data ?? []) as { id: string; name: string }[]) {
+      resCustMap.set(c.id, c.name)
+    }
+  }
+
+  const enrich = (rows: Reservation[]) =>
+    rows.map((r) => ({
+      ...r,
+      customer_name: resCustMap.get(r.customer_id) ?? '—',
+    }))
+
+  const pendingShop = enrich(
+    reservationRows.filter(
+      (r) => r.status === 'pending_shop' || r.status === 'requested'
+    )
+  )
+  const pendingCustomer = enrich(
+    reservationRows.filter((r) => r.status === 'pending_customer')
+  )
+  const upcomingConfirmed = enrich(
+    reservationRows
+      .filter(
+        (r) =>
+          r.status === 'confirmed' &&
+          r.confirmed_date &&
+          r.confirmed_date >= todayStr &&
+          r.confirmed_date <= horizon30
+      )
+      .sort((a, b) =>
+        (a.confirmed_date ?? '').localeCompare(b.confirmed_date ?? '')
+      )
+  )
+
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
-      {/* 今日のタスク (最重要・最上部) */}
+      {/* 予約サマリ (最上部・ファーストビュー) */}
+      <DashboardReservationSummary
+        pendingShop={pendingShop}
+        pendingCustomer={pendingCustomer}
+        upcomingConfirmed={upcomingConfirmed}
+      />
+
+      {/* 今日の電話タスク */}
       <TodayTasks tasks={tasks} />
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
