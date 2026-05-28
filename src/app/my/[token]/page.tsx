@@ -66,6 +66,13 @@ export async function generateMetadata({
   return {
     title,
     description,
+    // 動的 PWA manifest: ホーム画面追加時に start_url が /my/[token] になる
+    manifest: `/api/manifest/${token}`,
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'black-translucent',
+      title: vehicle.model ?? 'マイ愛車',
+    },
     openGraph: {
       title,
       description,
