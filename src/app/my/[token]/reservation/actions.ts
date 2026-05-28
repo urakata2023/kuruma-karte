@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendShopReservationNotice } from '@/lib/mail-templates'
 import { sendLineText } from '@/lib/line'
+import { logActivity } from '@/lib/activity-log'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import type { DateCandidate } from '@/lib/types'
@@ -61,20 +62,40 @@ export async function requestReservation(
   if (!purpose) return { error: 'ご相談内容を入力してください' }
 
   const first = candidates[0]
-  const { error } = await admin.from('reservations').insert({
-    shop_id: vehicle.shop_id,
-    customer_id: vehicle.customer_id,
-    vehicle_id: vehicle.id,
-    desired_date: first.date,
-    desired_slot: first.slot,
-    purpose,
-    customer_note,
-    candidate_dates: candidates,
-    shop_candidate_dates: [],
-    round: 1,
-    status: 'pending_shop',
-  })
+  const { data: insertedRes, error } = await admin
+    .from('reservations')
+    .insert({
+      shop_id: vehicle.shop_id,
+      customer_id: vehicle.customer_id,
+      vehicle_id: vehicle.id,
+      desired_date: first.date,
+      desired_slot: first.slot,
+      purpose,
+      customer_note,
+      candidate_dates: candidates,
+      shop_candidate_dates: [],
+      round: 1,
+      status: 'pending_shop',
+    })
+    .select('id')
+    .single<{ id: string }>()
   if (error) return { error: error.message }
+
+  // 顧客名 (ログ用)
+  const { data: cust } = await admin
+    .from('customers')
+    .select('name')
+    .eq('id', vehicle.customer_id)
+    .maybeSingle<{ name: string }>()
+
+  await logActivity({
+    shop_id: vehicle.shop_id,
+    kind: 'reservation_requested',
+    target_type: 'reservation',
+    target_id: insertedRes?.id,
+    message: `🔔 ${cust?.name ?? 'お客様'}様から新規予約申請 (希望日 ${candidates.length}件)`,
+    metadata: { candidates, purpose },
+  })
 
   // 店主への通知 (メール + LINE)
   try {
@@ -180,6 +201,22 @@ export async function acceptShopProposal(
     })
     .eq('id', reservationId)
     .eq('vehicle_id', vehicle.id)
+
+  // 顧客名取得 (ログ用)
+  const { data: cust } = await admin
+    .from('customers')
+    .select('name')
+    .eq('id', vehicle.customer_id)
+    .maybeSingle<{ name: string }>()
+
+  await logActivity({
+    shop_id: vehicle.shop_id,
+    kind: 'reservation_accepted_by_customer',
+    target_type: 'reservation',
+    target_id: reservationId,
+    message: `✅ ${cust?.name ?? 'お客様'}様が代替提案を承認 → ${acceptedDate} で確定`,
+    metadata: { acceptedDate, acceptedSlot },
+  })
 
   // 店主にメール + LINE で確定通知
   try {

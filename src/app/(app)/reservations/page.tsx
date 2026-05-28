@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
 import { ReservationCard } from './reservation-card'
 import type { Reservation } from '@/lib/types'
+import { ToastBanner } from '@/components/toast-banner'
 
 export const metadata = {
   title: '予約管理 — くるまカルテ',
@@ -14,8 +15,13 @@ type ReservationWithJoins = Reservation & {
   vehicle_plate: string | null
 }
 
-export default async function ReservationsPage() {
+export default async function ReservationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ toast?: string; msg?: string }>
+}) {
   const { shop } = await getCurrentShop()
+  const { toast, msg } = await searchParams
   const admin = createAdminClient()
 
   const { data: reservationsData } = await admin
@@ -70,6 +76,10 @@ export default async function ReservationsPage() {
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-8 px-6 py-10">
+      {(toast === 'ok' || toast === 'err') && msg && (
+        <ToastBanner type={toast} message={msg} />
+      )}
+
       <header>
         <h1 className="text-2xl font-semibold">🗓️ 予約管理</h1>
         <p className="mt-1 text-sm text-zinc-500">

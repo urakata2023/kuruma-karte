@@ -4,7 +4,9 @@ import { getCurrentShop } from '@/lib/shop'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendMail } from '@/lib/resend'
 import { sendLineText } from '@/lib/line'
+import { logActivity } from '@/lib/activity-log'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import type { DateCandidate } from '@/lib/types'
 import { parseSlotValue, slotLabel } from '@/lib/reservation-slots'
 
@@ -12,11 +14,23 @@ const slotJp = slotLabel
 const parseSlot = parseSlotValue
 
 /**
+ * Server Action 完了後にトーストを出すための redirect ヘルパー
+ */
+function toastRedirect(message: string, type: 'ok' | 'err' = 'ok'): never {
+  redirect(
+    `/reservations?toast=${type}&msg=${encodeURIComponent(message)}`
+  )
+}
+
+/**
  * お客様にメール (+ LINE) で返答を送る共通ヘルパー
+ * 送信成否を activity_logs に記録する。
  */
 async function notifyCustomer(params: {
+  shopId: string
   vehicleId: string
   customerId: string
+  customerName: string
   subject: string
   body: string
   appUrl: string
@@ -28,43 +42,87 @@ async function notifyCustomer(params: {
     .eq('id', params.customerId)
     .maybeSingle<{ email: string | null; line_user_id: string | null }>()
 
+  // メール送信
   if (customer?.email) {
-    await sendMail({
-      to: customer.email,
-      subject: params.subject,
-      text: params.body,
-    })
+    try {
+      await sendMail({
+        to: customer.email,
+        subject: params.subject,
+        text: params.body,
+      })
+      await logActivity({
+        shop_id: params.shopId,
+        kind: 'notification_sent',
+        target_type: 'customer',
+        target_id: params.customerId,
+        message: `📧 ${params.customerName}様にメール送信: ${params.subject}`,
+        channel: 'email',
+        channel_status: 'sent',
+        channel_recipient: customer.email,
+      })
+    } catch (e) {
+      console.error('mail send failed:', e)
+      await logActivity({
+        shop_id: params.shopId,
+        kind: 'notification_sent',
+        target_type: 'customer',
+        target_id: params.customerId,
+        message: `⚠️ ${params.customerName}様へのメール送信失敗`,
+        channel: 'email',
+        channel_status: 'failed',
+        channel_recipient: customer.email,
+      })
+    }
   }
+
   // LINE 連携してる店舗で、お客様の line_user_id が分かれば LINE Push も
-  const { data: vehicle } = await admin
-    .from('vehicles')
-    .select('shop_id')
-    .eq('id', params.vehicleId)
-    .maybeSingle<{ shop_id: string }>()
-  if (vehicle && customer?.line_user_id) {
+  if (customer?.line_user_id) {
     const { data: shop } = await admin
       .from('shops')
       .select('line_channel_access_token')
-      .eq('id', vehicle.shop_id)
+      .eq('id', params.shopId)
       .maybeSingle<{ line_channel_access_token: string | null }>()
     if (shop?.line_channel_access_token) {
-      await sendLineText({
-        channelAccessToken: shop.line_channel_access_token,
-        to: customer.line_user_id,
-        text: `${params.subject}\n\n${params.body}`,
-      })
+      try {
+        await sendLineText({
+          channelAccessToken: shop.line_channel_access_token,
+          to: customer.line_user_id,
+          text: `${params.subject}\n\n${params.body}`,
+        })
+        await logActivity({
+          shop_id: params.shopId,
+          kind: 'notification_sent',
+          target_type: 'customer',
+          target_id: params.customerId,
+          message: `💬 ${params.customerName}様にLINE送信`,
+          channel: 'line',
+          channel_status: 'sent',
+          channel_recipient: customer.line_user_id,
+        })
+      } catch (e) {
+        console.error('LINE send failed:', e)
+        await logActivity({
+          shop_id: params.shopId,
+          kind: 'notification_sent',
+          target_type: 'customer',
+          target_id: params.customerId,
+          message: `⚠️ ${params.customerName}様へのLINE送信失敗`,
+          channel: 'line',
+          channel_status: 'failed',
+        })
+      }
     }
   }
 }
 
 /**
- * 店主が「いずれかの希望日で承認」する。
+ * 「いずれかの希望日で承認」
  */
 export async function confirmReservation(
   reservationId: string,
   formData: FormData
 ): Promise<void> {
-  const { shop } = await getCurrentShop()
+  const { shop, userId } = await getCurrentShop()
   const admin = createAdminClient()
 
   const confirmed_date =
@@ -87,14 +145,29 @@ export async function confirmReservation(
     .select('customer_id, vehicle_id')
     .maybeSingle<{ customer_id: string; vehicle_id: string }>()
 
-  if (res) {
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL ?? 'https://kuruma-karte.vercel.app'
-    await notifyCustomer({
-      vehicleId: res.vehicle_id,
-      customerId: res.customer_id,
-      subject: `【${shop.name}】ご予約 確定のお知らせ`,
-      body: `お世話になっております、${shop.name}です。
+  if (!res) {
+    revalidatePath('/reservations')
+    toastRedirect('予約が見つかりませんでした', 'err')
+  }
+
+  // 顧客名取得 (ログ用)
+  const { data: customer } = await admin
+    .from('customers')
+    .select('name')
+    .eq('id', res.customer_id)
+    .maybeSingle<{ name: string }>()
+  const custName = customer?.name ?? 'お客様'
+
+  // お客様通知
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? 'https://kuruma-karte.vercel.app'
+  await notifyCustomer({
+    shopId: shop.id,
+    vehicleId: res.vehicle_id,
+    customerId: res.customer_id,
+    customerName: custName,
+    subject: `【${shop.name}】ご予約 確定のお知らせ`,
+    body: `お世話になっております、${shop.name}です。
 
 ご予約いただいた整備のお日にちが確定しましたのでお知らせします。
 
@@ -107,21 +180,34 @@ ${shop_note ? `\nお店から：\n${shop_note}\n` : ''}
 よろしくお願いいたします。
 
 ${shop.name}`,
-      appUrl,
-    })
-  }
+    appUrl,
+  })
+
+  // 操作ログ
+  await logActivity({
+    shop_id: shop.id,
+    user_id: userId,
+    kind: 'reservation_confirmed',
+    target_type: 'reservation',
+    target_id: reservationId,
+    message: `✅ ${custName}様の予約を ${confirmed_date} (${slotJp(confirmed_slot)}) で確定`,
+    metadata: { confirmed_date, confirmed_slot },
+  })
 
   revalidatePath('/reservations')
+  toastRedirect(
+    `✅ ${custName}様の予約を ${confirmed_date} (${slotJp(confirmed_slot)}) で確定 — お客様にメール送信しました`
+  )
 }
 
 /**
- * 店主が「全部NG → 3日程の代替候補を再提案」する (Phase G の核)
+ * 「全部NG → 3日程の代替候補を再提案」
  */
 export async function proposeAlternativeDates(
   reservationId: string,
   formData: FormData
 ): Promise<void> {
-  const { shop } = await getCurrentShop()
+  const { shop, userId } = await getCurrentShop()
   const admin = createAdminClient()
 
   const alts: DateCandidate[] = [
@@ -140,7 +226,7 @@ export async function proposeAlternativeDates(
   ].filter((c) => c.date)
 
   if (alts.length === 0) {
-    throw new Error('再提案の日程を1つ以上入れてください')
+    toastRedirect('再提案の日程を1つ以上入れてください', 'err')
   }
 
   const shop_note =
@@ -161,29 +247,39 @@ export async function proposeAlternativeDates(
     .select('customer_id, vehicle_id')
     .maybeSingle<{ customer_id: string; vehicle_id: string }>()
 
-  if (res) {
-    // お客様のマイページURL取得
-    const { data: vehicle } = await admin
-      .from('vehicles')
-      .select('view_token')
-      .eq('id', res.vehicle_id)
-      .maybeSingle<{ view_token: string }>()
+  if (!res) {
+    revalidatePath('/reservations')
+    toastRedirect('予約が見つかりませんでした', 'err')
+  }
 
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL ?? 'https://kuruma-karte.vercel.app'
-    const myPageUrl = vehicle
-      ? `${appUrl}/my/${vehicle.view_token}`
-      : appUrl
+  const { data: customer } = await admin
+    .from('customers')
+    .select('name')
+    .eq('id', res.customer_id)
+    .maybeSingle<{ name: string }>()
+  const custName = customer?.name ?? 'お客様'
 
-    const altsBlock = alts
-      .map((c, i) => `候補${i + 1}：${c.date} (${slotJp(c.slot)})`)
-      .join('\n')
+  const { data: vehicle } = await admin
+    .from('vehicles')
+    .select('view_token')
+    .eq('id', res.vehicle_id)
+    .maybeSingle<{ view_token: string }>()
 
-    await notifyCustomer({
-      vehicleId: res.vehicle_id,
-      customerId: res.customer_id,
-      subject: `【${shop.name}】ご予約 — 代替日のご提案`,
-      body: `お世話になっております、${shop.name}です。
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? 'https://kuruma-karte.vercel.app'
+  const myPageUrl = vehicle ? `${appUrl}/my/${vehicle.view_token}` : appUrl
+
+  const altsBlock = alts
+    .map((c, i) => `候補${i + 1}：${c.date} (${slotJp(c.slot)})`)
+    .join('\n')
+
+  await notifyCustomer({
+    shopId: shop.id,
+    vehicleId: res.vehicle_id,
+    customerId: res.customer_id,
+    customerName: custName,
+    subject: `【${shop.name}】ご予約 — 代替日のご提案`,
+    body: `お世話になっております、${shop.name}です。
 
 ご希望いただいたお日にちが満員のため、以下の代替候補をご提案させていただきます。
 
@@ -200,18 +296,30 @@ ${myPageUrl}
 ご都合に合わない場合は、お電話でも結構ですのでお気軽にご連絡ください。
 
 ${shop.name}`,
-      appUrl,
-    })
-  }
+    appUrl,
+  })
+
+  await logActivity({
+    shop_id: shop.id,
+    user_id: userId,
+    kind: 'reservation_proposed',
+    target_type: 'reservation',
+    target_id: reservationId,
+    message: `📅 ${custName}様に代替3日程を提案`,
+    metadata: { alts },
+  })
 
   revalidatePath('/reservations')
+  toastRedirect(
+    `📅 ${custName}様に代替3日程を再提案しました — お客様にメール送信済み`
+  )
 }
 
 export async function rejectReservation(
   reservationId: string,
   formData: FormData
 ): Promise<void> {
-  const { shop } = await getCurrentShop()
+  const { shop, userId } = await getCurrentShop()
   const admin = createAdminClient()
 
   const shop_note = ((formData.get('shop_note') as string) || '').trim() || null
@@ -228,14 +336,27 @@ export async function rejectReservation(
     .select('customer_id, vehicle_id')
     .maybeSingle<{ customer_id: string; vehicle_id: string }>()
 
-  if (res) {
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL ?? 'https://kuruma-karte.vercel.app'
-    await notifyCustomer({
-      vehicleId: res.vehicle_id,
-      customerId: res.customer_id,
-      subject: `【${shop.name}】ご予約について`,
-      body: `お世話になっております、${shop.name}です。
+  if (!res) {
+    revalidatePath('/reservations')
+    toastRedirect('予約が見つかりませんでした', 'err')
+  }
+
+  const { data: customer } = await admin
+    .from('customers')
+    .select('name')
+    .eq('id', res.customer_id)
+    .maybeSingle<{ name: string }>()
+  const custName = customer?.name ?? 'お客様'
+
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? 'https://kuruma-karte.vercel.app'
+  await notifyCustomer({
+    shopId: shop.id,
+    vehicleId: res.vehicle_id,
+    customerId: res.customer_id,
+    customerName: custName,
+    subject: `【${shop.name}】ご予約について`,
+    body: `お世話になっております、${shop.name}です。
 
 このたびはご予約のリクエストをいただきありがとうございました。
 誠に申し訳ありませんが、今回はお受けすることが難しい状況です。
@@ -243,20 +364,29 @@ ${shop_note ? `\n${shop_note}\n` : ''}
 ご不明な点はお気軽にお電話くださいませ。
 
 ${shop.name}`,
-      appUrl,
-    })
-  }
+    appUrl,
+  })
+
+  await logActivity({
+    shop_id: shop.id,
+    user_id: userId,
+    kind: 'reservation_rejected',
+    target_type: 'reservation',
+    target_id: reservationId,
+    message: `❌ ${custName}様の予約をお断り`,
+  })
 
   revalidatePath('/reservations')
+  toastRedirect(`${custName}様の予約をお断りしました — お客様にメール送信済み`)
 }
 
 export async function completeReservation(
   reservationId: string
 ): Promise<void> {
-  const { shop } = await getCurrentShop()
+  const { shop, userId } = await getCurrentShop()
   const admin = createAdminClient()
 
-  await admin
+  const { data: res } = await admin
     .from('reservations')
     .update({
       status: 'completed',
@@ -264,6 +394,30 @@ export async function completeReservation(
     })
     .eq('id', reservationId)
     .eq('shop_id', shop.id)
+    .select('customer_id')
+    .maybeSingle<{ customer_id: string }>()
 
-  revalidatePath('/reservations')
+  if (res) {
+    const { data: customer } = await admin
+      .from('customers')
+      .select('name')
+      .eq('id', res.customer_id)
+      .maybeSingle<{ name: string }>()
+    const custName = customer?.name ?? 'お客様'
+
+    await logActivity({
+      shop_id: shop.id,
+      user_id: userId,
+      kind: 'reservation_completed',
+      target_type: 'reservation',
+      target_id: reservationId,
+      message: `🏁 ${custName}様の予約を入庫済みに変更`,
+    })
+
+    revalidatePath('/reservations')
+    toastRedirect(`🏁 ${custName}様の予約を入庫済みに変更しました`)
+  } else {
+    revalidatePath('/reservations')
+    toastRedirect('予約が見つかりませんでした', 'err')
+  }
 }

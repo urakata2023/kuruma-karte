@@ -19,6 +19,9 @@ export function Header({ shopName }: { shopName: string }) {
             <Link href="/reservations" className="hover:text-zinc-900 dark:hover:text-white">
               🗓️ 予約
             </Link>
+            <Link href="/activity" className="hover:text-zinc-900 dark:hover:text-white">
+              📜 履歴
+            </Link>
             <Link href="/settings/theme" className="hover:text-zinc-900 dark:hover:text-white">
               🎨 テーマ
             </Link>
