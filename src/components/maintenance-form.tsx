@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import type { MaintenanceRecord } from '@/lib/types'
+import { MaintenanceTemplatePicker } from '@/components/maintenance-template-picker'
 
 type State = { error?: string } | undefined
 type ActionFn = (prev: State, formData: FormData) => Promise<State>
@@ -33,6 +34,9 @@ export function MaintenanceForm({
 
   return (
     <form action={formAction} className="space-y-4">
+      {/* 整備テンプレート (新規登録時のみ) */}
+      {!record && <MaintenanceTemplatePicker />}
+
       <div className="space-y-1">
         <label htmlFor="title" className="block text-sm font-medium">
           整備内容 *
