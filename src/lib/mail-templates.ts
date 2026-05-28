@@ -78,6 +78,68 @@ export function buildInspectionReminderSubject(
   return `【${p.shopName}】お車の車検のご案内（あと${p.reminderLabel}）`
 }
 
+// ─── 予約申し込み通知 (Phase B) ──────────────────────
+
+export type ShopReservationNoticeParams = {
+  to: string
+  shopName: string
+  customerName: string
+  vehicleLabel: string
+  desiredDate: string
+  desiredSlot: string
+  purpose: string
+  customerNote: string | null
+}
+
+/**
+ * 店主にお客様からの予約申し込みをメール通知。
+ * 実送信は resend 経由。
+ */
+export async function sendShopReservationNotice(
+  p: ShopReservationNoticeParams
+): Promise<void> {
+  const { sendMail } = await import('./resend')
+
+  const slotJp =
+    p.desiredSlot === 'morning'
+      ? '午前'
+      : p.desiredSlot === 'afternoon'
+        ? '午後'
+        : p.desiredSlot === 'evening'
+          ? '夕方'
+          : 'お任せ'
+
+  const body = `${p.shopName} ご担当者様
+
+くるまカルテ経由で、お客様から入庫予約のご相談が届きました。
+
+────────────────────
+◆ お客様情報
+お名前：${p.customerName} 様
+車両　：${p.vehicleLabel}
+
+◆ ご希望
+希望日：${p.desiredDate}
+時間帯：${slotJp}
+内容　：${p.purpose}
+備考　：${p.customerNote ?? '（なし）'}
+────────────────────
+
+管理画面の「予約管理」から承認・調整できます。
+
+—
+このメールは くるまカルテ から自動送信されています。
+`
+
+  await sendMail({
+    to: p.to,
+    subject: `【${p.shopName}】入庫予約のご相談が届いています — ${p.customerName} 様`,
+    text: body,
+  })
+}
+
+// ───────────────────────────────────────────
+
 export function buildInspectionReminderText(
   p: InspectionReminderParams
 ): string {

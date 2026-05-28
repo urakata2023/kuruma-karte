@@ -175,6 +175,37 @@ export function MaintenanceTimeline({
                       交換部品：{r.parts}
                     </p>
                   )}
+                  {/* Before / After 写真 (Phase A) */}
+                  {(r.before_photo_url || r.after_photo_url) && (
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      {r.before_photo_url && (
+                        <figure className="space-y-1">
+                          <figcaption className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                            Before（整備前）
+                          </figcaption>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={r.before_photo_url}
+                            alt="整備前"
+                            className="block aspect-[4/3] w-full rounded-md border border-zinc-200 object-cover dark:border-zinc-800"
+                          />
+                        </figure>
+                      )}
+                      {r.after_photo_url && (
+                        <figure className="space-y-1">
+                          <figcaption className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                            After（整備後）
+                          </figcaption>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={r.after_photo_url}
+                            alt="整備後"
+                            className="block aspect-[4/3] w-full rounded-md border border-zinc-200 object-cover dark:border-zinc-800"
+                          />
+                        </figure>
+                      )}
+                    </div>
+                  )}
                   {r.attachment_url && (
                     <a
                       href={r.attachment_url}

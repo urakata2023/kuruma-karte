@@ -14,6 +14,7 @@ import { CollapsibleMap } from '@/components/collapsible-map'
 import { ToastBanner } from '@/components/toast-banner'
 import { OnboardingTour } from '@/components/onboarding-tour'
 import { MaintenanceRecommendationsCustomerAsync } from '@/components/maintenance-recommendations-async'
+import { ReservationButton } from '@/components/reservation-button'
 import { Suspense } from 'react'
 import {
   calcMonthlyAverageKm,
@@ -225,6 +226,14 @@ export default async function OwnerMyPage({
           shopPhone={shop?.phone ?? null}
         />
       </Suspense>
+
+      {/* 予約ボタン (Phase B) */}
+      <section className="mx-auto w-full max-w-2xl px-6 pb-2">
+        <ReservationButton
+          token={token}
+          shopName={shop?.name ?? 'お店'}
+        />
+      </section>
 
       {/* ギャラリー */}
       <VehicleGallery photos={photos} heroPhotoUrl={vehicle.photo_url} />

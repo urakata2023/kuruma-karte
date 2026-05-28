@@ -16,8 +16,14 @@ export function Header({ shopName }: { shopName: string }) {
             <Link href="/customers" className="hover:text-zinc-900 dark:hover:text-white">
               お客さん
             </Link>
+            <Link href="/reservations" className="hover:text-zinc-900 dark:hover:text-white">
+              🗓️ 予約
+            </Link>
             <Link href="/settings/theme" className="hover:text-zinc-900 dark:hover:text-white">
               🎨 テーマ
+            </Link>
+            <Link href="/settings/integrations" className="hover:text-zinc-900 dark:hover:text-white">
+              🔗 連携
             </Link>
             <Link href="/flyer" className="hover:text-zinc-900 dark:hover:text-white">
               📄 チラシ

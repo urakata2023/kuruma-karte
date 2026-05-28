@@ -83,6 +83,23 @@ export type TouringRecord = {
   updated_at: string
 }
 
+export type Reservation = {
+  id: string
+  shop_id: string
+  customer_id: string
+  vehicle_id: string
+  desired_date: string
+  desired_slot: 'morning' | 'afternoon' | 'evening' | 'any' | null
+  purpose: string
+  customer_note: string | null
+  confirmed_date: string | null
+  confirmed_slot: 'morning' | 'afternoon' | 'evening' | null
+  shop_note: string | null
+  status: 'requested' | 'confirmed' | 'rejected' | 'completed' | 'cancelled'
+  created_at: string
+  updated_at: string
+}
+
 export type MaintenanceRecord = {
   id: string
   vehicle_id: string
@@ -95,6 +112,8 @@ export type MaintenanceRecord = {
   cost: number | null
   created_by: 'shop' | 'customer'
   attachment_url: string | null
+  before_photo_url: string | null // Phase A
+  after_photo_url: string | null // Phase A
   created_at: string
   updated_at: string
 }

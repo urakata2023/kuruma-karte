@@ -138,6 +138,56 @@ export function MaintenanceForm({
         </p>
       </div>
 
+      {/* Before / After 写真 (Phase A) */}
+      <div className="space-y-2 rounded-md border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900">
+        <p className="text-sm font-medium">📸 整備前 / 整備後の写真（任意）</p>
+        <p className="text-xs text-zinc-500">
+          お客様マイページに Before / After で並べて表示されます。信頼感アップ。
+        </p>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="space-y-1">
+            <label htmlFor="before_photo" className="block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+              整備前 (Before)
+            </label>
+            {record?.before_photo_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={record.before_photo_url}
+                alt="整備前"
+                className="block aspect-[4/3] w-full rounded-md object-cover"
+              />
+            )}
+            <input
+              id="before_photo"
+              name="before_photo"
+              type="file"
+              accept="image/*,.heic,.heif"
+              className="block w-full text-xs file:mr-2 file:rounded file:border-0 file:bg-zinc-900 file:px-2 file:py-1 file:text-[10px] file:font-medium file:text-white hover:file:bg-zinc-800 dark:file:bg-white dark:file:text-black"
+            />
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="after_photo" className="block text-xs font-medium text-zinc-600 dark:text-zinc-400">
+              整備後 (After)
+            </label>
+            {record?.after_photo_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={record.after_photo_url}
+                alt="整備後"
+                className="block aspect-[4/3] w-full rounded-md object-cover"
+              />
+            )}
+            <input
+              id="after_photo"
+              name="after_photo"
+              type="file"
+              accept="image/*,.heic,.heif"
+              className="block w-full text-xs file:mr-2 file:rounded file:border-0 file:bg-zinc-900 file:px-2 file:py-1 file:text-[10px] file:font-medium file:text-white hover:file:bg-zinc-800 dark:file:bg-white dark:file:text-black"
+            />
+          </div>
+        </div>
+      </div>
+
       {state?.error && (
         <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
           {state.error}

@@ -27,3 +27,27 @@ export function getResend(): Resend {
  */
 export const FROM_EMAIL =
   process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev'
+
+/**
+ * 汎用メール送信ヘルパー。
+ * RESEND_API_KEY が未設定の場合は警告ログだけ出して何もしない (機能を止めない)。
+ */
+export async function sendMail(params: {
+  to: string
+  subject: string
+  text: string
+  html?: string
+}): Promise<void> {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('[sendMail] RESEND_API_KEY 未設定。送信スキップ:', params.subject)
+    return
+  }
+  const r = getResend()
+  await r.emails.send({
+    from: FROM_EMAIL,
+    to: params.to,
+    subject: params.subject,
+    text: params.text,
+    html: params.html,
+  })
+}
