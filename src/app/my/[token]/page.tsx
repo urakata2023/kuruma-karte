@@ -13,6 +13,8 @@ import { TouringList } from '@/components/touring-list'
 import { CollapsibleMap } from '@/components/collapsible-map'
 import { ToastBanner } from '@/components/toast-banner'
 import { OnboardingTour } from '@/components/onboarding-tour'
+import { MaintenanceRecommendationsCustomerAsync } from '@/components/maintenance-recommendations-async'
+import { Suspense } from 'react'
 import {
   calcMonthlyAverageKm,
   extractMileagePoints,
@@ -206,6 +208,23 @@ export default async function OwnerMyPage({
 
       {/* ALWAYS WITH YOU カウンター */}
       {startIso && <AlwaysWithYou startIso={startIso} />}
+
+      {/* AIからの「次のおすすめ整備」 — Phase 11 */}
+      <Suspense
+        fallback={
+          <section className="mx-auto w-full max-w-2xl px-6 py-8">
+            <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-5 py-4 text-center text-xs text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900">
+              💡 AIが愛車に合うおすすめ整備を考えています…
+            </div>
+          </section>
+        }
+      >
+        <MaintenanceRecommendationsCustomerAsync
+          vehicle={vehicle}
+          records={records}
+          shopPhone={shop?.phone ?? null}
+        />
+      </Suspense>
 
       {/* ギャラリー */}
       <VehicleGallery photos={photos} heroPhotoUrl={vehicle.photo_url} />

@@ -2,7 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentShop } from '@/lib/shop'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { ConfirmDeleteForm } from '@/components/confirm-delete-form'
+import { MaintenanceRecommendationsShopAsync } from '@/components/maintenance-recommendations-async'
 import { deleteMaintenanceRecord } from './maintenance/actions'
 import type { Vehicle, Customer, MaintenanceRecord } from '@/lib/types'
 
@@ -107,6 +109,21 @@ export default async function VehicleDetailPage({
           </div>
         </div>
       </section>
+
+      {/* AIアシスタント (Phase 11) — 店主向け次の一手 */}
+      <Suspense
+        fallback={
+          <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 text-center text-xs text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900">
+            🤖 AIが {customer?.name ?? 'お客様'} 様への提案を考えています…
+          </div>
+        }
+      >
+        <MaintenanceRecommendationsShopAsync
+          vehicle={vehicle}
+          records={records}
+          customerName={customer?.name ?? 'お客様'}
+        />
+      </Suspense>
 
       {/* 整備記録 */}
       <section className="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-black">
