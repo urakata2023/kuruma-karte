@@ -178,18 +178,34 @@ function ChannelBadge({
 }) {
   const channelLabel =
     channel === 'email' ? '📧 メール' : channel === 'line' ? '💬 LINE' : channel
-  const isOk = status === 'sent'
+
+  const styles = {
+    sent: {
+      cls: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
+      icon: '✓',
+      suffix: '送信成功',
+    },
+    failed: {
+      cls: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
+      icon: '✗',
+      suffix: '送信失敗',
+    },
+    skipped: {
+      cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
+      icon: '⏭️',
+      suffix: '未送信',
+    },
+  } as const
+
+  const key = (status as keyof typeof styles) ?? 'skipped'
+  const s = styles[key] ?? styles.skipped
+
   return (
     <span
-      className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-        isOk
-          ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
-          : status === 'failed'
-            ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
-            : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
-      }`}
+      className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${s.cls}`}
+      title={s.suffix}
     >
-      {channelLabel} {isOk ? '✓' : status === 'failed' ? '✗' : ''}
+      {channelLabel} {s.icon} {s.suffix}
     </span>
   )
 }

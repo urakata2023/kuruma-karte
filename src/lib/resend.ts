@@ -28,26 +28,57 @@ export function getResend(): Resend {
 export const FROM_EMAIL =
   process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev'
 
+export type MailSendResult =
+  | { status: 'sent'; messageId?: string }
+  | { status: 'skipped'; reason: string }
+  | { status: 'failed'; reason: string }
+
 /**
- * 汎用メール送信ヘルパー。
- * RESEND_API_KEY が未設定の場合は警告ログだけ出して何もしない (機能を止めない)。
+ * 汎用メール送信ヘルパー (Phase I 修正版)。
+ *
+ * 戻り値で送信結果を明示的に返す：
+ *  - sent: Resend が受理した
+ *  - skipped: 環境変数未設定など、そもそも送信しなかった
+ *  - failed: Resend が拒否 or ネットワーク失敗
+ *
+ * 呼び出し側はこの結果で logActivity の channel_status を出し分ける。
  */
 export async function sendMail(params: {
   to: string
   subject: string
   text: string
   html?: string
-}): Promise<void> {
+}): Promise<MailSendResult> {
   if (!process.env.RESEND_API_KEY) {
-    console.warn('[sendMail] RESEND_API_KEY 未設定。送信スキップ:', params.subject)
-    return
+    console.warn(
+      '[sendMail] RESEND_API_KEY 未設定。送信スキップ:',
+      params.subject
+    )
+    return {
+      status: 'skipped',
+      reason: 'RESEND_API_KEY 未設定 (Vercel環境変数で設定が必要)',
+    }
   }
-  const r = getResend()
-  await r.emails.send({
-    from: FROM_EMAIL,
-    to: params.to,
-    subject: params.subject,
-    text: params.text,
-    html: params.html,
-  })
+  try {
+    const r = getResend()
+    const result = await r.emails.send({
+      from: FROM_EMAIL,
+      to: params.to,
+      subject: params.subject,
+      text: params.text,
+      html: params.html,
+    })
+    if (result.error) {
+      return {
+        status: 'failed',
+        reason: result.error.message ?? String(result.error),
+      }
+    }
+    return { status: 'sent', messageId: result.data?.id }
+  } catch (e) {
+    return {
+      status: 'failed',
+      reason: e instanceof Error ? e.message : String(e),
+    }
+  }
 }

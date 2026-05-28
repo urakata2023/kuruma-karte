@@ -42,35 +42,49 @@ async function notifyCustomer(params: {
     .eq('id', params.customerId)
     .maybeSingle<{ email: string | null; line_user_id: string | null }>()
 
-  // メール送信
+  // メール送信 (戻り値 sent/skipped/failed を見て正直にログ記録)
   if (customer?.email) {
-    try {
-      await sendMail({
-        to: customer.email,
-        subject: params.subject,
-        text: params.body,
-      })
+    const result = await sendMail({
+      to: customer.email,
+      subject: params.subject,
+      text: params.body,
+    })
+
+    if (result.status === 'sent') {
       await logActivity({
         shop_id: params.shopId,
         kind: 'notification_sent',
         target_type: 'customer',
         target_id: params.customerId,
-        message: `📧 ${params.customerName}様にメール送信: ${params.subject}`,
+        message: `📧 ${params.customerName}様にメール送信成功: ${params.subject}`,
         channel: 'email',
         channel_status: 'sent',
         channel_recipient: customer.email,
+        metadata: { messageId: result.messageId },
       })
-    } catch (e) {
-      console.error('mail send failed:', e)
+    } else if (result.status === 'skipped') {
       await logActivity({
         shop_id: params.shopId,
         kind: 'notification_sent',
         target_type: 'customer',
         target_id: params.customerId,
-        message: `⚠️ ${params.customerName}様へのメール送信失敗`,
+        message: `⏭️ メール送信スキップ (${result.reason}) — ${params.customerName}様: ${params.subject}`,
+        channel: 'email',
+        channel_status: 'skipped',
+        channel_recipient: customer.email,
+        metadata: { reason: result.reason },
+      })
+    } else {
+      await logActivity({
+        shop_id: params.shopId,
+        kind: 'notification_sent',
+        target_type: 'customer',
+        target_id: params.customerId,
+        message: `⚠️ ${params.customerName}様へのメール送信失敗: ${result.reason}`,
         channel: 'email',
         channel_status: 'failed',
         channel_recipient: customer.email,
+        metadata: { reason: result.reason },
       })
     }
   }
@@ -82,7 +96,20 @@ async function notifyCustomer(params: {
       .select('line_channel_access_token')
       .eq('id', params.shopId)
       .maybeSingle<{ line_channel_access_token: string | null }>()
-    if (shop?.line_channel_access_token) {
+
+    if (!shop?.line_channel_access_token) {
+      // LINE 設定なし → skipped
+      await logActivity({
+        shop_id: params.shopId,
+        kind: 'notification_sent',
+        target_type: 'customer',
+        target_id: params.customerId,
+        message: `⏭️ LINE送信スキップ (LINE Channel Token 未設定) — ${params.customerName}様`,
+        channel: 'line',
+        channel_status: 'skipped',
+        channel_recipient: customer.line_user_id,
+      })
+    } else {
       try {
         await sendLineText({
           channelAccessToken: shop.line_channel_access_token,
@@ -94,7 +121,7 @@ async function notifyCustomer(params: {
           kind: 'notification_sent',
           target_type: 'customer',
           target_id: params.customerId,
-          message: `💬 ${params.customerName}様にLINE送信`,
+          message: `💬 ${params.customerName}様にLINE送信成功`,
           channel: 'line',
           channel_status: 'sent',
           channel_recipient: customer.line_user_id,
@@ -106,7 +133,7 @@ async function notifyCustomer(params: {
           kind: 'notification_sent',
           target_type: 'customer',
           target_id: params.customerId,
-          message: `⚠️ ${params.customerName}様へのLINE送信失敗`,
+          message: `⚠️ ${params.customerName}様へのLINE送信失敗: ${e instanceof Error ? e.message : ''}`,
           channel: 'line',
           channel_status: 'failed',
         })
