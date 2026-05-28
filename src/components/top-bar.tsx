@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import { logout } from '@/app/auth/actions'
+import { SearchBar } from '@/components/search-bar'
 
 /**
- * 管理画面のトップバー (Phase L)
+ * 管理画面のトップバー (Phase L + L+)
  *
- * サイドバーレイアウトの右側、コンテンツ上部に固定。
- * 検索バー + ログアウトボタン + 軽い装飾。
+ * - 左: インクリメンタル検索バー (Spotlight 風)
+ * - 右: トライアル表示 + ログアウト
  */
 export function TopBar() {
   return (
@@ -16,33 +17,10 @@ export function TopBar() {
         borderColor: 'var(--hairline)',
       }}
     >
-      {/* 検索バー */}
-      <form
-        action="/search"
-        method="get"
-        className="ml-12 flex-1 max-w-md md:ml-0"
-      >
-        <div className="relative">
-          <input
-            type="search"
-            name="q"
-            placeholder="名前・電話・ナンバー・車種で検索…"
-            className="w-full rounded-lg border bg-transparent py-2 pl-10 pr-3 text-sm placeholder-zinc-400 focus:outline-none"
-            style={{
-              borderColor: 'var(--hairline)',
-              color: 'var(--ink)',
-            }}
-          />
-          <span
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm"
-            style={{ color: 'var(--ink-subtle)' }}
-          >
-            🔍
-          </span>
-        </div>
-      </form>
+      <div className="ml-12 flex-1 md:ml-0">
+        <SearchBar />
+      </div>
 
-      {/* 右側アクション */}
       <div className="flex items-center gap-2">
         <Link
           href="/billing"
