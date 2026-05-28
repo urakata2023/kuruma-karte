@@ -22,6 +22,9 @@ export function Header({ shopName }: { shopName: string }) {
             <Link href="/settings/theme" className="hover:text-zinc-900 dark:hover:text-white">
               🎨 テーマ
             </Link>
+            <Link href="/settings/members" className="hover:text-zinc-900 dark:hover:text-white">
+              👥 スタッフ
+            </Link>
             <Link href="/settings/integrations" className="hover:text-zinc-900 dark:hover:text-white">
               🔗 連携
             </Link>
