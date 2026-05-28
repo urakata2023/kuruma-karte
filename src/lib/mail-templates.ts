@@ -157,6 +157,171 @@ ${candidatesBlock}
 }
 
 // ───────────────────────────────────────────
+// HTML メールテンプレート (Phase J)
+// ヘッダー+カード+お店からメッセージ+フッター の高級レイアウト
+// ───────────────────────────────────────────
+
+export type EmailHtmlParams = {
+  shopName: string
+  shopPhone?: string | null
+  customerName: string
+  title: string // 例: "ご予約 確定のお知らせ"
+  intro?: string // ヘッダー直下の前文 (任意)
+  highlight?: {
+    label: string // 例: "確定日時"
+    value: string // 例: "2026年5月29日"
+    sub?: string // 例: "11:00〜"
+  }
+  candidates?: {
+    label: string
+    items: { dateLabel: string; slotLabel: string }[]
+  }
+  message?: string // 「お店から」のひと言メッセージ
+  ctaButton?: {
+    label: string
+    url: string
+  }
+  outro?: string // 締めの文章
+}
+
+const escapeHtml = (s: string): string =>
+  s.replace(
+    /[&<>"']/g,
+    (c) =>
+      ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+      })[c] ?? c
+  )
+
+const nl2br = (s: string): string =>
+  escapeHtml(s).replace(/\n/g, '<br>')
+
+/**
+ * 高級レイアウトのHTMLメール本文を生成。
+ * インラインCSSのみ (Gmail等のメールクライアント互換性のため)。
+ */
+export function buildEmailHtml(p: EmailHtmlParams): string {
+  const accent = '#18181b' // テーマプライマリ相当
+  const cardBg = '#fafafa'
+  const cardBorder = '#e4e4e7'
+  const textSub = '#52525b'
+  const textMute = '#71717a'
+
+  const highlightBlock = p.highlight
+    ? `
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${cardBg};border:1px solid ${cardBorder};border-radius:10px;margin:0 0 24px 0;">
+        <tr><td style="padding:24px;">
+          <p style="margin:0 0 8px 0;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:${textMute};">${escapeHtml(p.highlight.label)}</p>
+          <p style="margin:0;font-size:28px;font-weight:700;color:${accent};line-height:1.2;">${escapeHtml(p.highlight.value)}</p>
+          ${p.highlight.sub ? `<p style="margin:6px 0 0 0;font-size:15px;color:${textSub};font-weight:500;">${escapeHtml(p.highlight.sub)}</p>` : ''}
+        </td></tr>
+      </table>
+    `
+    : ''
+
+  const candidatesBlock = p.candidates
+    ? `
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${cardBg};border:1px solid ${cardBorder};border-radius:10px;margin:0 0 24px 0;">
+        <tr><td style="padding:20px 24px;">
+          <p style="margin:0 0 10px 0;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:${textMute};">${escapeHtml(p.candidates.label)}</p>
+          ${p.candidates.items
+            .map(
+              (it) => `
+            <p style="margin:0 0 4px 0;font-size:16px;color:${accent};font-weight:600;">
+              ${escapeHtml(it.dateLabel)}
+              <span style="font-size:13px;color:${textSub};font-weight:400;margin-left:8px;">${escapeHtml(it.slotLabel)}</span>
+            </p>
+          `
+            )
+            .join('')}
+        </td></tr>
+      </table>
+    `
+    : ''
+
+  const messageBlock = p.message
+    ? `
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eff6ff;border-left:3px solid #2563eb;border-radius:6px;margin:0 0 24px 0;">
+        <tr><td style="padding:16px 20px;">
+          <p style="margin:0 0 4px 0;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:#1d4ed8;font-weight:700;">お店から</p>
+          <p style="margin:0;font-size:14px;color:#1e3a8a;line-height:1.7;">${nl2br(p.message)}</p>
+        </td></tr>
+      </table>
+    `
+    : ''
+
+  const ctaBlock = p.ctaButton
+    ? `
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 28px 0;">
+        <tr><td align="center">
+          <a href="${escapeHtml(p.ctaButton.url)}"
+             style="display:inline-block;padding:14px 32px;background:${accent};color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;border-radius:8px;">
+            ${escapeHtml(p.ctaButton.label)}
+          </a>
+        </td></tr>
+      </table>
+    `
+    : ''
+
+  const phoneBlock = p.shopPhone
+    ? `<p style="margin:6px 0 0 0;font-size:13px;color:${textSub};">📞 <a href="tel:${escapeHtml(p.shopPhone)}" style="color:${textSub};text-decoration:none;">${escapeHtml(p.shopPhone)}</a></p>`
+    : ''
+
+  return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${escapeHtml(p.title)}</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Hiragino Sans','Yu Gothic UI',sans-serif;-webkit-font-smoothing:antialiased;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f5;padding:40px 12px;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:100%;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+
+        <!-- ヘッダー (店舗ブランド) -->
+        <tr><td style="background:linear-gradient(135deg,${accent} 0%,#3f3f46 100%);padding:32px 40px;color:#ffffff;">
+          <p style="margin:0;font-size:10px;letter-spacing:0.35em;text-transform:uppercase;opacity:0.65;">For Our Customer</p>
+          <h1 style="margin:6px 0 0 0;font-size:22px;font-weight:700;letter-spacing:0.02em;">${escapeHtml(p.shopName)}</h1>
+        </td></tr>
+
+        <!-- メイン -->
+        <tr><td style="padding:40px;">
+          <p style="margin:0 0 22px 0;font-size:15px;color:${accent};">${escapeHtml(p.customerName)} 様</p>
+          <h2 style="margin:0 0 14px 0;font-size:24px;font-weight:700;color:${accent};line-height:1.4;">${escapeHtml(p.title)}</h2>
+          ${p.intro ? `<p style="margin:0 0 28px 0;font-size:14px;color:${textSub};line-height:1.8;">${nl2br(p.intro)}</p>` : '<div style="height:8px;"></div>'}
+
+          ${highlightBlock}
+          ${candidatesBlock}
+          ${messageBlock}
+          ${ctaBlock}
+
+          ${p.outro ? `<p style="margin:0;font-size:14px;color:${textSub};line-height:1.8;">${nl2br(p.outro)}</p>` : ''}
+        </td></tr>
+
+        <!-- フッター (店舗連絡先) -->
+        <tr><td style="background:${cardBg};padding:22px 40px;border-top:1px solid ${cardBorder};">
+          <p style="margin:0;font-size:13px;font-weight:600;color:${accent};">${escapeHtml(p.shopName)}</p>
+          ${phoneBlock}
+        </td></tr>
+
+        <!-- くるまカルテブランド -->
+        <tr><td style="background:${accent};padding:14px 40px;text-align:center;">
+          <p style="margin:0;font-size:9px;letter-spacing:0.3em;color:#a1a1aa;text-transform:uppercase;">Powered by くるまカルテ</p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+}
+
+// ───────────────────────────────────────────
 
 export function buildInspectionReminderText(
   p: InspectionReminderParams

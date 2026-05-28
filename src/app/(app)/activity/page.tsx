@@ -1,6 +1,7 @@
 import { getCurrentShop } from '@/lib/shop'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
+import { formatTimeJST, formatDayLabelJST, jstDateKey } from '@/lib/datetime-jp'
 
 export const metadata = {
   title: '活動履歴 — くるまカルテ',
@@ -68,10 +69,10 @@ export default async function ActivityPage({
   const { data } = await query
   const rows = (data ?? []) as ActivityRow[]
 
-  // 日付ごとにグルーピング
+  // 日付ごとにグルーピング (JST基準)
   const byDate = new Map<string, ActivityRow[]>()
   for (const r of rows) {
-    const d = r.created_at.slice(0, 10)
+    const d = jstDateKey(r.created_at)
     if (!byDate.has(d)) byDate.set(d, [])
     byDate.get(d)!.push(r)
   }
@@ -102,7 +103,7 @@ export default async function ActivityPage({
           {Array.from(byDate.entries()).map(([date, items]) => (
             <section key={date}>
               <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                {formatDateJP(date)}
+                {formatDayLabelJST(date)}
               </h2>
               <ul className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
                 {items.map((r) => (
@@ -131,7 +132,7 @@ export default async function ActivityPage({
                         )}
                       </div>
                       <p className="whitespace-nowrap text-[10px] text-zinc-400">
-                        {formatTimeJP(r.created_at)}
+                        {formatTimeJST(r.created_at)}
                       </p>
                     </div>
                   </li>
@@ -210,20 +211,3 @@ function ChannelBadge({
   )
 }
 
-function formatDateJP(d: string): string {
-  const today = new Date().toISOString().slice(0, 10)
-  const yesterday = new Date(Date.now() - 24 * 3600 * 1000)
-    .toISOString()
-    .slice(0, 10)
-  if (d === today) return '今日'
-  if (d === yesterday) return '昨日'
-  const [y, m, day] = d.split('-')
-  return `${y}年${m}月${day}日`
-}
-
-function formatTimeJP(iso: string): string {
-  const dt = new Date(iso)
-  const hh = String(dt.getHours()).padStart(2, '0')
-  const mm = String(dt.getMinutes()).padStart(2, '0')
-  return `${hh}:${mm}`
-}

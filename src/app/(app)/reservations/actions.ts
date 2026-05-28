@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendMail } from '@/lib/resend'
 import { sendLineText } from '@/lib/line'
 import { logActivity } from '@/lib/activity-log'
+import { buildEmailHtml } from '@/lib/mail-templates'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import type { DateCandidate } from '@/lib/types'
@@ -33,6 +34,7 @@ async function notifyCustomer(params: {
   customerName: string
   subject: string
   body: string
+  html?: string
   appUrl: string
 }) {
   const admin = createAdminClient()
@@ -48,6 +50,7 @@ async function notifyCustomer(params: {
       to: customer.email,
       subject: params.subject,
       text: params.body,
+      html: params.html,
     })
 
     if (result.status === 'sent') {
@@ -188,25 +191,50 @@ export async function confirmReservation(
   // お客様通知
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL ?? 'https://kuruma-karte.vercel.app'
-  await notifyCustomer({
-    shopId: shop.id,
-    vehicleId: res.vehicle_id,
-    customerId: res.customer_id,
-    customerName: custName,
-    subject: `【${shop.name}】ご予約 確定のお知らせ`,
-    body: `お世話になっております、${shop.name}です。
+
+  // 日本語の日付表示
+  const dateJp = confirmed_date
+    ? confirmed_date.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$1年$2月$3日')
+    : '—'
+
+  const subject = `【${shop.name}】ご予約 確定のお知らせ`
+  const textBody = `お世話になっております、${shop.name}です。
 
 ご予約いただいた整備のお日にちが確定しましたのでお知らせします。
 
 ────────────────────
-確定日：${confirmed_date}
+確定日：${dateJp}
 時間帯：${slotJp(confirmed_slot)}
 ────────────────────
 ${shop_note ? `\nお店から：\n${shop_note}\n` : ''}
 当日、お気をつけてお越しください。
 よろしくお願いいたします。
 
-${shop.name}`,
+${shop.name}`
+
+  const htmlBody = buildEmailHtml({
+    shopName: shop.name,
+    shopPhone: shop.phone,
+    customerName: custName,
+    title: '✓ ご予約 確定のお知らせ',
+    intro: 'ご予約いただいた整備のお日にちが確定しましたのでお知らせします。',
+    highlight: {
+      label: '確定日時',
+      value: dateJp,
+      sub: slotJp(confirmed_slot),
+    },
+    message: shop_note ?? undefined,
+    outro: '当日、お気をつけてお越しください。\nよろしくお願いいたします。',
+  })
+
+  await notifyCustomer({
+    shopId: shop.id,
+    vehicleId: res.vehicle_id,
+    customerId: res.customer_id,
+    customerName: custName,
+    subject,
+    body: textBody,
+    html: htmlBody,
     appUrl,
   })
 
@@ -296,17 +324,15 @@ export async function proposeAlternativeDates(
     process.env.NEXT_PUBLIC_APP_URL ?? 'https://kuruma-karte.vercel.app'
   const myPageUrl = vehicle ? `${appUrl}/my/${vehicle.view_token}` : appUrl
 
+  const formatDate = (d: string) =>
+    d.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$1年$2月$3日')
+
   const altsBlock = alts
-    .map((c, i) => `候補${i + 1}：${c.date} (${slotJp(c.slot)})`)
+    .map((c, i) => `候補${i + 1}：${formatDate(c.date)} (${slotJp(c.slot)})`)
     .join('\n')
 
-  await notifyCustomer({
-    shopId: shop.id,
-    vehicleId: res.vehicle_id,
-    customerId: res.customer_id,
-    customerName: custName,
-    subject: `【${shop.name}】ご予約 — 代替日のご提案`,
-    body: `お世話になっております、${shop.name}です。
+  const subject = `【${shop.name}】ご予約 — 代替日のご提案`
+  const textBody = `お世話になっております、${shop.name}です。
 
 ご希望いただいたお日にちが満員のため、以下の代替候補をご提案させていただきます。
 
@@ -322,7 +348,36 @@ ${myPageUrl}
 
 ご都合に合わない場合は、お電話でも結構ですのでお気軽にご連絡ください。
 
-${shop.name}`,
+${shop.name}`
+
+  const htmlBody = buildEmailHtml({
+    shopName: shop.name,
+    shopPhone: shop.phone,
+    customerName: custName,
+    title: '📅 代替日のご提案',
+    intro:
+      'ご希望いただいたお日にちが満員のため、以下の代替候補をご提案させていただきます。',
+    candidates: {
+      label: '代替候補',
+      items: alts.map((c, i) => ({
+        dateLabel: `候補${i + 1}：${formatDate(c.date)}`,
+        slotLabel: slotJp(c.slot),
+      })),
+    },
+    message: shop_note,
+    ctaButton: { label: 'ご希望の候補を選ぶ', url: myPageUrl },
+    outro:
+      'ご都合に合わない場合は、お電話でも結構ですのでお気軽にご連絡ください。',
+  })
+
+  await notifyCustomer({
+    shopId: shop.id,
+    vehicleId: res.vehicle_id,
+    customerId: res.customer_id,
+    customerName: custName,
+    subject,
+    body: textBody,
+    html: htmlBody,
     appUrl,
   })
 
@@ -377,20 +432,35 @@ export async function rejectReservation(
 
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL ?? 'https://kuruma-karte.vercel.app'
-  await notifyCustomer({
-    shopId: shop.id,
-    vehicleId: res.vehicle_id,
-    customerId: res.customer_id,
-    customerName: custName,
-    subject: `【${shop.name}】ご予約について`,
-    body: `お世話になっております、${shop.name}です。
+
+  const subject = `【${shop.name}】ご予約について`
+  const textBody = `お世話になっております、${shop.name}です。
 
 このたびはご予約のリクエストをいただきありがとうございました。
 誠に申し訳ありませんが、今回はお受けすることが難しい状況です。
 ${shop_note ? `\n${shop_note}\n` : ''}
 ご不明な点はお気軽にお電話くださいませ。
 
-${shop.name}`,
+${shop.name}`
+
+  const htmlBody = buildEmailHtml({
+    shopName: shop.name,
+    shopPhone: shop.phone,
+    customerName: custName,
+    title: 'ご予約について',
+    intro: `このたびはご予約のリクエストをいただきありがとうございました。\n誠に申し訳ありませんが、今回はお受けすることが難しい状況です。`,
+    message: shop_note ?? undefined,
+    outro: 'ご不明な点はお気軽にお電話くださいませ。',
+  })
+
+  await notifyCustomer({
+    shopId: shop.id,
+    vehicleId: res.vehicle_id,
+    customerId: res.customer_id,
+    customerName: custName,
+    subject,
+    body: textBody,
+    html: htmlBody,
     appUrl,
   })
 
