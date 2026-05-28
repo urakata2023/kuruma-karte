@@ -42,7 +42,13 @@ export function MaintenanceTimeline({
   return (
     <>
       {/* フィルタ・ソートバー */}
-      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-zinc-200 bg-white p-2 dark:border-zinc-800 dark:bg-black">
+      <div
+        className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border p-2"
+        style={{
+          background: 'var(--surface-1)',
+          borderColor: 'var(--hairline)',
+        }}
+      >
         <div className="flex flex-wrap items-center gap-1">
           <FilterChip
             active={filter === 'all'}
@@ -67,7 +73,11 @@ export function MaintenanceTimeline({
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as SortValue)}
-            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950"
+            className="rounded-md border bg-transparent px-2 py-1 text-xs focus:outline-none"
+            style={{
+              borderColor: 'var(--hairline)',
+              color: 'var(--ink-muted)',
+            }}
             aria-label="並び替え"
           >
             <option value="newest">新しい順</option>
@@ -100,24 +110,41 @@ export function MaintenanceTimeline({
             </Link>
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-zinc-700">
+          <div
+            className="rounded-xl border border-dashed p-8 text-center text-sm"
+            style={{
+              borderColor: 'var(--hairline)',
+              color: 'var(--ink-subtle)',
+            }}
+          >
             該当する記録がありません
           </div>
         )
       ) : (
-        <ol className="relative space-y-4 border-l-2 border-zinc-200 pl-5 dark:border-zinc-800">
+        <ol
+          className="relative space-y-4 border-l-2 pl-5"
+          style={{ borderColor: 'var(--hairline)' }}
+        >
           {filtered.map((r) => {
             const isOwner = r.created_by === 'customer'
             return (
               <li key={r.id} className="relative">
                 <span
-                  className={`absolute -left-[27px] mt-1.5 h-3 w-3 rounded-full border-2 border-white dark:border-black ${
-                    isOwner
-                      ? 'bg-blue-500 dark:bg-blue-400'
-                      : 'bg-zinc-700 dark:bg-zinc-300'
-                  }`}
+                  className="absolute -left-[27px] mt-1.5 h-3 w-3 rounded-full border-2"
+                  style={{
+                    background: isOwner
+                      ? 'var(--theme-accent)'
+                      : 'var(--theme-primary)',
+                    borderColor: 'var(--surface-1)',
+                  }}
                 />
-                <div className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-black">
+                <div
+                  className="rounded-xl border p-4 transition-colors hover:border-current"
+                  style={{
+                    background: 'var(--surface-1)',
+                    borderColor: 'var(--hairline)',
+                  }}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1">
                       <div className="flex flex-wrap items-center gap-2">
@@ -244,11 +271,11 @@ function FilterChip({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-        active
-          ? 'bg-zinc-900 text-white dark:bg-white dark:text-black'
-          : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'
-      }`}
+      className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
+      style={{
+        background: active ? 'var(--theme-primary)' : 'var(--surface-2)',
+        color: active ? 'var(--theme-primary-fg)' : 'var(--ink-muted)',
+      }}
     >
       {children}
     </button>

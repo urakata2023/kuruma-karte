@@ -1,10 +1,11 @@
 import type { MaintenanceAdvice } from '@/lib/maintenance-advisor'
 
 /**
- * お客様マイページ向け「次のおすすめ整備」セクション。
+ * お客様マイページ向け「次のおすすめ整備」セクション (Phase M+ 刷新版)
  *
- * AI が車種・走行距離・整備履歴から判断したおすすめ整備を、
- * 安心感のあるトーンで提示する。
+ * Linear / Stripe のドキュメントカード風。
+ * 新デザイントークンで統一、緊急度バッジを control 風に、
+ * 「お店に相談する」CTAをテーマプライマリで強調。
  */
 export function MaintenanceRecommendationsCustomer({
   advice,
@@ -22,51 +23,102 @@ export function MaintenanceRecommendationsCustomer({
       <div
         className="overflow-hidden rounded-2xl border shadow-sm"
         style={{
-          background: 'var(--theme-surface)',
-          borderColor: 'var(--theme-surface-border)',
+          background: 'var(--surface-1)',
+          borderColor: 'var(--hairline)',
         }}
       >
-        {/* ヘッダー */}
+        {/* ヘッダー: テーマ色のアクセントライン + eyebrow + title */}
         <div
-          className="px-5 py-4"
+          className="relative px-5 py-5"
           style={{
             background:
-              'linear-gradient(90deg, var(--theme-accent) 0%, color-mix(in srgb, var(--theme-accent) 70%, var(--theme-primary)) 100%)',
-            color: 'var(--theme-accent-fg)',
+              'linear-gradient(180deg, color-mix(in srgb, var(--theme-accent) 6%, transparent), transparent)',
           }}
         >
-          <div className="flex items-center gap-2">
-            <span className="text-xl">💡</span>
-            <h2 className="text-sm font-semibold tracking-wide">
-              AIからの「次のおすすめ整備」
-            </h2>
+          <div
+            className="absolute left-0 top-0 h-full w-1"
+            style={{ background: 'var(--theme-accent)' }}
+            aria-hidden
+          />
+          <div className="flex items-start gap-3 pl-3">
+            <span className="text-2xl">💡</span>
+            <div className="flex-1">
+              <p
+                className="text-eyebrow"
+                style={{ color: 'var(--theme-accent)' }}
+              >
+                AI Recommendations
+              </p>
+              <h2
+                className="mt-0.5 text-title"
+                style={{ color: 'var(--ink)' }}
+              >
+                次のおすすめ整備
+              </h2>
+              {advice.customer_summary && (
+                <p
+                  className="mt-2 text-sm leading-relaxed"
+                  style={{ color: 'var(--ink-muted)' }}
+                >
+                  {advice.customer_summary}
+                </p>
+              )}
+            </div>
           </div>
-          {advice.customer_summary && (
-            <p className="mt-1 text-xs opacity-90">
-              {advice.customer_summary}
-            </p>
-          )}
         </div>
 
         {/* おすすめ一覧 */}
-        <ol className="divide-y" style={{ borderColor: 'var(--theme-surface-border)' }}>
+        <ol className="divide-y" style={{ borderColor: 'var(--hairline)' }}>
           {advice.recommendations.map((rec, i) => (
             <li key={i} className="px-5 py-4">
-              <div className="flex items-start gap-3">
-                <div className="text-2xl">{rec.icon}</div>
+              <div className="flex items-start gap-4">
+                <div
+                  className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg text-xl"
+                  style={{
+                    background: 'var(--surface-2)',
+                  }}
+                >
+                  {rec.icon}
+                </div>
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-base font-semibold">{rec.title}</h3>
-                    <UrgencyBadge urgency={rec.urgency} window={rec.due_window} />
+                    <h3
+                      className="text-base font-semibold"
+                      style={{ color: 'var(--ink)' }}
+                    >
+                      {rec.title}
+                    </h3>
+                    <UrgencyBadge
+                      urgency={rec.urgency}
+                      window={rec.due_window}
+                    />
                   </div>
-                  <p className="mt-1 text-xs opacity-70">{rec.reason}</p>
-                  <p className="mt-2 text-sm leading-relaxed">
+                  <p
+                    className="mt-1 text-xs"
+                    style={{ color: 'var(--ink-subtle)' }}
+                  >
+                    {rec.reason}
+                  </p>
+                  <p
+                    className="mt-2.5 text-sm leading-relaxed"
+                    style={{ color: 'var(--ink-muted)' }}
+                  >
                     {rec.customer_message}
                   </p>
                   {rec.estimated_cost_range && (
-                    <p className="mt-2 text-xs">
-                      <span className="opacity-60">目安費用：</span>
-                      <span className="font-medium">{rec.estimated_cost_range}</span>
+                    <p
+                      className="mt-2 inline-flex items-center gap-1.5 text-xs tabular-figs"
+                      style={{ color: 'var(--ink-subtle)' }}
+                    >
+                      <span
+                        className="text-eyebrow"
+                        style={{ color: 'var(--ink-tertiary)' }}
+                      >
+                        Est.
+                      </span>
+                      <span style={{ color: 'var(--ink)' }}>
+                        {rec.estimated_cost_range}
+                      </span>
                     </p>
                   )}
                 </div>
@@ -79,11 +131,11 @@ export function MaintenanceRecommendationsCustomer({
         {shopPhone && (
           <div
             className="border-t px-5 py-4"
-            style={{ borderColor: 'var(--theme-surface-border)' }}
+            style={{ borderColor: 'var(--hairline)' }}
           >
             <a
               href={`tel:${shopPhone}`}
-              className="block w-full rounded-md px-4 py-2.5 text-center text-sm font-semibold"
+              className="block w-full rounded-md px-4 py-3 text-center text-sm font-semibold transition-transform active:scale-[0.98]"
               style={{
                 background: 'var(--theme-primary)',
                 color: 'var(--theme-primary-fg)',
@@ -91,8 +143,11 @@ export function MaintenanceRecommendationsCustomer({
             >
               📞 お店に相談する
             </a>
-            <p className="mt-2 text-center text-[10px] opacity-50">
-              AI による提案です。最終的な整備内容は整備士とご相談ください。
+            <p
+              className="mt-2 text-center text-[10px]"
+              style={{ color: 'var(--ink-tertiary)' }}
+            >
+              AI による提案です。最終的な整備内容は整備士とご相談ください
             </p>
           </div>
         )}
@@ -112,17 +167,34 @@ function UrgencyBadge({
     'high' | 'medium' | 'low',
     { bg: string; fg: string; label: string }
   > = {
-    high: { bg: '#dc2626', fg: '#ffffff', label: '🔥 急ぎ' },
-    medium: { bg: '#f59e0b', fg: '#ffffff', label: '⏰ そろそろ' },
-    low: { bg: '#10b981', fg: '#ffffff', label: '✓ 余裕あり' },
+    high: {
+      bg: 'rgb(254 226 226)',
+      fg: 'rgb(185 28 28)',
+      label: '急ぎ',
+    },
+    medium: {
+      bg: 'rgb(254 243 199)',
+      fg: 'rgb(180 83 9)',
+      label: 'そろそろ',
+    },
+    low: {
+      bg: 'rgb(220 252 231)',
+      fg: 'rgb(21 128 61)',
+      label: '余裕',
+    },
   }
   const s = styles[urgency]
   return (
     <span
-      className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium"
       style={{ background: s.bg, color: s.fg }}
     >
-      {s.label} {w && `· ${w}`}
+      <span
+        className="h-1.5 w-1.5 rounded-full"
+        style={{ background: s.fg }}
+      />
+      {s.label}
+      {w && ` · ${w}`}
     </span>
   )
 }
