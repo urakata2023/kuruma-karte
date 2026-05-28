@@ -2,24 +2,51 @@
 @import "leaflet/dist/leaflet.css";
 
 /* ───────────────────────────────────────────────────────
- * 店舗テーマ (Phase 10)
- * html要素に data-theme="xxx" を付けると配色が切り替わる。
- * 各コンポーネントは bg-theme-primary, text-theme-accent 等の
- * Tailwind 任意値クラスから var(--theme-*) を参照する。
+ * デザイントークン (Phase L)
+ * Linear / Stripe / Vercel をリファレンスにした
+ * 「町工場のためのプロフェッショナルダッシュボード」のための統一基盤
+ * ───────────────────────────────────────────────────────
+ *
+ * カラーシステム = テーマ依存 (data-theme="..." で切替)
+ * タイポグラフィスケール = 全テーマ共通
+ * スペーシングシステム = 4の倍数 (Tailwind 準拠)
+ *
+ * 命名規則:
+ *  - --canvas: 最も奥の背景
+ *  - --surface-1/2/3: 浮上カードの段階
+ *  - --hairline: 罫線色
+ *  - --ink: 主要テキスト / --ink-muted / --ink-subtle / --ink-tertiary
+ *  - --accent: アクセント (CTA/ハイライト)
+ */
+
+/* ───────────────────────────────────────────────────────
+ * 店舗テーマ (Phase 10 → Phase L で拡張)
  * ─────────────────────────────────────────────────────── */
 
-/* デフォルト (Karte Default) */
+/* デフォルト (Karte Default) — クリーンなライト基調 */
 :root,
 :root[data-theme="default"] {
   --background: #ffffff;
   --foreground: #171717;
-  --theme-primary: #18181b;          /* メインのCTA/ボタン色 */
-  --theme-primary-fg: #ffffff;       /* primary上の文字 */
-  --theme-accent: #2563eb;           /* アクセント (ハイライト・ALWAYS WITH YOU等) */
+  /* 既存トークン (旧コンポーネント互換) */
+  --theme-primary: #18181b;
+  --theme-primary-fg: #ffffff;
+  --theme-accent: #2563eb;
   --theme-accent-fg: #ffffff;
-  --theme-surface: #fafafa;          /* カード背景 */
+  --theme-surface: #fafafa;
   --theme-surface-border: #e4e4e7;
   --theme-hero-overlay: rgba(0, 0, 0, 0.4);
+  /* 拡張トークン (Phase L) */
+  --canvas: #ffffff;
+  --surface-1: #fafafa;       /* カード背景 */
+  --surface-2: #f4f4f5;       /* 強調カード */
+  --surface-3: #e4e4e7;       /* 入力欄等 */
+  --hairline: #e4e4e7;
+  --hairline-strong: #d4d4d8;
+  --ink: #18181b;
+  --ink-muted: #3f3f46;
+  --ink-subtle: #71717a;
+  --ink-tertiary: #a1a1aa;
 }
 
 /* Rosso (赤×黒・イタリアンスポーツ) */
@@ -33,6 +60,16 @@
   --theme-surface: #1a1a1a;
   --theme-surface-border: #2a2a2a;
   --theme-hero-overlay: rgba(220, 26, 26, 0.35);
+  --canvas: #0a0a0a;
+  --surface-1: #131313;
+  --surface-2: #1a1a1a;
+  --surface-3: #232323;
+  --hairline: #2a2a2a;
+  --hairline-strong: #3a3a3a;
+  --ink: #fafafa;
+  --ink-muted: #d4d4d8;
+  --ink-subtle: #a1a1aa;
+  --ink-tertiary: #71717a;
 }
 
 /* Heritage Gold (クリーム×ボルドー×ゴールド) */
@@ -46,6 +83,16 @@
   --theme-surface: #ffffff;
   --theme-surface-border: #e0d5b8;
   --theme-hero-overlay: rgba(122, 31, 31, 0.35);
+  --canvas: #f7f1e3;
+  --surface-1: #ffffff;
+  --surface-2: #f3eada;
+  --surface-3: #ebe0c5;
+  --hairline: #e0d5b8;
+  --hairline-strong: #c8b88f;
+  --ink: #2a1a0e;
+  --ink-muted: #5b4a3c;
+  --ink-subtle: #8a7866;
+  --ink-tertiary: #b3a48e;
 }
 
 /* Bavarian Blue (白×青の機能美) */
@@ -59,6 +106,16 @@
   --theme-surface: #f4f7fb;
   --theme-surface-border: #d8e2f0;
   --theme-hero-overlay: rgba(10, 78, 163, 0.4);
+  --canvas: #ffffff;
+  --surface-1: #f4f7fb;
+  --surface-2: #e8eff8;
+  --surface-3: #d8e2f0;
+  --hairline: #d8e2f0;
+  --hairline-strong: #b8c8dc;
+  --ink: #0f1f33;
+  --ink-muted: #34495e;
+  --ink-subtle: #6b7d8f;
+  --ink-tertiary: #9eaab8;
 }
 
 /* Premium Black (漆黒×シャンパンゴールド) */
@@ -72,6 +129,16 @@
   --theme-surface: #1a1a1a;
   --theme-surface-border: #2d2620;
   --theme-hero-overlay: rgba(0, 0, 0, 0.55);
+  --canvas: #0a0a0a;
+  --surface-1: #141414;
+  --surface-2: #1a1a1a;
+  --surface-3: #232020;
+  --hairline: #2d2620;
+  --hairline-strong: #3d3528;
+  --ink: #f5f0e3;
+  --ink-muted: #d4c9a8;
+  --ink-subtle: #a8a08c;
+  --ink-tertiary: #6e6856;
 }
 
 /* Silver Star (シルバー×紺の格式) */
@@ -85,6 +152,16 @@
   --theme-surface: #ffffff;
   --theme-surface-border: #d6dde6;
   --theme-hero-overlay: rgba(12, 26, 43, 0.45);
+  --canvas: #f4f6f9;
+  --surface-1: #ffffff;
+  --surface-2: #ecf0f5;
+  --surface-3: #dde4ec;
+  --hairline: #d6dde6;
+  --hairline-strong: #b8c2cf;
+  --ink: #0c1a2b;
+  --ink-muted: #2d3e54;
+  --ink-subtle: #5b6b7e;
+  --ink-tertiary: #95a1b0;
 }
 
 @theme inline {
@@ -96,8 +173,20 @@
   --color-theme-accent-fg: var(--theme-accent-fg);
   --color-theme-surface: var(--theme-surface);
   --color-theme-surface-border: var(--theme-surface-border);
+  /* 拡張トークン */
+  --color-canvas: var(--canvas);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-ink-tertiary: var(--ink-tertiary);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-display);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -113,7 +202,67 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* ───────────────────────────────────────────────────────
+ * タイポグラフィシステム (Phase L) - Linear 風スケール
+ * ─────────────────────────────────────────────────────── */
+.text-display-xl {
+  font-family: var(--font-display), var(--font-geist-sans), sans-serif;
+  font-size: 4.5rem;        /* 72px */
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.045em;
+}
+.text-display {
+  font-family: var(--font-display), var(--font-geist-sans), sans-serif;
+  font-size: 3rem;          /* 48px */
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+.text-headline {
+  font-size: 1.75rem;       /* 28px */
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+.text-title {
+  font-size: 1.25rem;       /* 20px */
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+}
+.text-eyebrow {
+  font-size: 0.75rem;       /* 12px */
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.tabular-figs {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* ───────────────────────────────────────────────────────
+ * カードプリミティブ (Phase L)
+ * Linear の charcoal panels に倣う
+ * ─────────────────────────────────────────────────────── */
+.card-base {
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+}
+.card-hover {
+  transition: border-color 200ms ease, background-color 200ms ease, transform 200ms ease;
+}
+.card-hover:hover {
+  border-color: var(--hairline-strong);
 }
 
 /* テーマ適用 wrapper: data-theme要素自体にも背景色を伝播させる */

@@ -1,12 +1,14 @@
 import { getCurrentShop } from '@/lib/shop'
-import { Header } from '@/components/header'
+import { Sidebar } from '@/components/sidebar'
+import { TopBar } from '@/components/top-bar'
 import { getTheme } from '@/lib/themes'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 /**
- * (app) Route Group：認証必須エリアの共通レイアウト
- * ヘッダー＋認証チェック（未認証ならgetCurrentShopが/loginにredirect）
- * 店舗テーマ (Phase 10) + 予約バッジ件数 (Phase K) を Header に渡す
+ * (app) Route Group: 管理画面の共通レイアウト (Phase L 刷新版)
+ *
+ * Sidebar (左固定 / モバイルではハンバーガー) + TopBar (上固定検索) +
+ * メインコンテンツの3ペイン構成。Linear/Stripe 風。
  */
 export default async function AppLayout({
   children,
@@ -16,7 +18,6 @@ export default async function AppLayout({
   const { shop } = await getCurrentShop()
   const theme = getTheme(shop.theme)
 
-  // 承認待ち予約件数 (ヘッダーバッジ用)
   let pendingCount = 0
   try {
     const admin = createAdminClient()
@@ -27,13 +28,24 @@ export default async function AppLayout({
       .in('status', ['requested', 'pending_shop'])
     pendingCount = count ?? 0
   } catch {
-    // バッジ取得失敗してもページは表示
+    // ignore
   }
 
   return (
-    <div data-theme={theme.id} className="flex flex-1 flex-col">
-      <Header shopName={shop.name} pendingReservationCount={pendingCount} />
-      <div className="flex-1">{children}</div>
+    <div
+      data-theme={theme.id}
+      className="flex min-h-screen"
+      style={{ background: 'var(--canvas)', color: 'var(--ink)' }}
+    >
+      <Sidebar
+        shopName={shop.name}
+        themeId={theme.id}
+        pendingReservationCount={pendingCount}
+      />
+      <div className="flex flex-1 flex-col md:pl-64">
+        <TopBar />
+        <main className="flex-1">{children}</main>
+      </div>
     </div>
   )
 }
