@@ -20,6 +20,8 @@ CREATE INDEX IF NOT EXISTS idx_maint_reco_shop ON maintenance_recommendations(sh
 -- RLS: 管理画面は普通の認証経由でアクセス、マイページは admin client 経由 (token 検証はアプリ側)
 ALTER TABLE maintenance_recommendations ENABLE ROW LEVEL SECURITY;
 
+-- CREATE POLICY は冪等ではないので DROP IF EXISTS で先に掃除 (再実行時のエラー回避)
+DROP POLICY IF EXISTS "shop_owner_can_read_own_recommendations" ON maintenance_recommendations;
 CREATE POLICY "shop_owner_can_read_own_recommendations"
   ON maintenance_recommendations FOR SELECT
   USING (
@@ -28,6 +30,7 @@ CREATE POLICY "shop_owner_can_read_own_recommendations"
     )
   );
 
+DROP POLICY IF EXISTS "shop_owner_can_write_own_recommendations" ON maintenance_recommendations;
 CREATE POLICY "shop_owner_can_write_own_recommendations"
   ON maintenance_recommendations FOR ALL
   USING (
