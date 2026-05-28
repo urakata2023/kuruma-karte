@@ -6,10 +6,12 @@ import { requestReservation } from '@/app/my/[token]/reservation/actions'
 type State = { error?: string } | undefined
 
 /**
- * お客様マイページの「予約する」ボタン (Phase B)
+ * お客様マイページの「予約する」ボタン (Phase G)
  *
- * クリックでモーダルが開き、希望日時 + 内容を入力 → Server Action 送信。
- * 店主には自動メール通知。
+ * 3日程キャッチボール式：
+ * - お客様が 第1〜第3希望日 を提示
+ * - 店主は承認 or 3日程再提案
+ * - お客様は再提案を確認して選択
  */
 export function ReservationButton({
   token,
@@ -30,6 +32,12 @@ export function ReservationButton({
   const tomorrow = new Date(Date.now() + 24 * 3600 * 1000)
     .toISOString()
     .slice(0, 10)
+  const dayAfter = new Date(Date.now() + 2 * 24 * 3600 * 1000)
+    .toISOString()
+    .slice(0, 10)
+  const day3 = new Date(Date.now() + 3 * 24 * 3600 * 1000)
+    .toISOString()
+    .slice(0, 10)
 
   return (
     <>
@@ -48,7 +56,7 @@ export function ReservationButton({
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center">
           <div
-            className="w-full max-w-md space-y-4 rounded-2xl p-6 shadow-2xl"
+            className="max-h-[90vh] w-full max-w-md space-y-4 overflow-y-auto rounded-2xl p-6 shadow-2xl"
             style={{
               background: 'var(--theme-surface, white)',
               color: 'var(--foreground)',
@@ -69,38 +77,33 @@ export function ReservationButton({
             </div>
 
             <p className="text-xs opacity-70">
-              希望日と内容を入力すると、{shopName}にリクエストが届きます。
-              日程はお店から改めてご連絡します。
+              ご希望日を <b>3つ</b>{' '}
+              お選びください。{shopName}が空き状況を確認のうえ、
+              いずれかで確定するか、別日の代替候補をご提案します。
             </p>
 
             <form action={formAction} className="space-y-3">
-              <div className="space-y-1">
-                <label className="block text-xs font-medium">ご希望日 *</label>
-                <input
-                  type="date"
-                  name="desired_date"
-                  required
-                  min={tomorrow}
-                  defaultValue={tomorrow}
-                  className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:outline-none dark:border-zinc-700 dark:bg-zinc-950"
-                />
-              </div>
+              <CandidateField
+                label="第1希望"
+                nameDate="candidate1_date"
+                nameSlot="candidate1_slot"
+                defaultDate={tomorrow}
+                required
+              />
+              <CandidateField
+                label="第2希望"
+                nameDate="candidate2_date"
+                nameSlot="candidate2_slot"
+                defaultDate={dayAfter}
+              />
+              <CandidateField
+                label="第3希望"
+                nameDate="candidate3_date"
+                nameSlot="candidate3_slot"
+                defaultDate={day3}
+              />
 
-              <div className="space-y-1">
-                <label className="block text-xs font-medium">時間帯のご希望</label>
-                <select
-                  name="desired_slot"
-                  defaultValue="any"
-                  className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:outline-none dark:border-zinc-700 dark:bg-zinc-950"
-                >
-                  <option value="any">お任せ</option>
-                  <option value="morning">午前</option>
-                  <option value="afternoon">午後</option>
-                  <option value="evening">夕方</option>
-                </select>
-              </div>
-
-              <div className="space-y-1">
+              <div className="space-y-1 pt-2">
                 <label className="block text-xs font-medium">
                   ご相談内容 *
                 </label>
@@ -141,12 +144,60 @@ export function ReservationButton({
                   color: 'var(--theme-primary-fg)',
                 }}
               >
-                {pending ? '送信中…' : 'この内容で予約する'}
+                {pending ? '送信中…' : 'この内容で予約をお願いする'}
               </button>
+
+              <p className="text-center text-[10px] opacity-50">
+                ご返答はメールでお届けします
+              </p>
             </form>
           </div>
         </div>
       )}
     </>
+  )
+}
+
+function CandidateField({
+  label,
+  nameDate,
+  nameSlot,
+  defaultDate,
+  required = false,
+}: {
+  label: string
+  nameDate: string
+  nameSlot: string
+  defaultDate: string
+  required?: boolean
+}) {
+  const today = new Date().toISOString().slice(0, 10)
+  return (
+    <div>
+      <label className="block text-xs font-medium">
+        {label}
+        {required && ' *'}
+      </label>
+      <div className="mt-1 grid grid-cols-3 gap-2">
+        <input
+          type="date"
+          name={nameDate}
+          min={today}
+          defaultValue={defaultDate}
+          required={required}
+          className="col-span-2 rounded-md border border-zinc-300 px-3 py-2 text-sm focus:outline-none dark:border-zinc-700 dark:bg-zinc-950"
+        />
+        <select
+          name={nameSlot}
+          defaultValue="any"
+          className="rounded-md border border-zinc-300 px-2 py-2 text-sm focus:outline-none dark:border-zinc-700 dark:bg-zinc-950"
+        >
+          <option value="any">お任せ</option>
+          <option value="morning">午前</option>
+          <option value="afternoon">午後</option>
+          <option value="evening">夕方</option>
+        </select>
+      </div>
+    </div>
   )
 }

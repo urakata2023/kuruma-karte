@@ -53,11 +53,19 @@ export default async function ReservationsPage() {
     vehicle_plate: vehicleMap.get(r.vehicle_id)?.plate_number ?? null,
   }))
 
-  // ステータス別に分類
-  const requested = enriched.filter((r) => r.status === 'requested')
+  // ステータス別に分類 (Phase G)
+  const requested = enriched.filter(
+    (r) => r.status === 'requested' || r.status === 'pending_shop'
+  )
+  const pendingCustomer = enriched.filter(
+    (r) => r.status === 'pending_customer'
+  )
   const confirmed = enriched.filter((r) => r.status === 'confirmed')
   const done = enriched.filter(
-    (r) => r.status === 'completed' || r.status === 'rejected' || r.status === 'cancelled'
+    (r) =>
+      r.status === 'completed' ||
+      r.status === 'rejected' ||
+      r.status === 'cancelled'
   )
 
   return (
@@ -80,6 +88,23 @@ export default async function ReservationsPage() {
         ) : (
           <ul className="space-y-3">
             {requested.map((r) => (
+              <ReservationCard key={r.id} reservation={r} />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-base font-semibold">
+          📨 お客様返答待ち（{pendingCustomer.length}件）
+        </h2>
+        {pendingCustomer.length === 0 ? (
+          <p className="rounded-md border border-dashed border-zinc-300 p-4 text-sm text-zinc-500 dark:border-zinc-700">
+            再提案中の予約はありません
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {pendingCustomer.map((r) => (
               <ReservationCard key={r.id} reservation={r} />
             ))}
           </ul>
@@ -136,7 +161,10 @@ export default async function ReservationsPage() {
 function statusLabel(status: Reservation['status']): string {
   switch (status) {
     case 'requested':
+    case 'pending_shop':
       return '承認待ち'
+    case 'pending_customer':
+      return 'お客様返答待ち'
     case 'confirmed':
       return '確定済み'
     case 'rejected':
@@ -145,6 +173,8 @@ function statusLabel(status: Reservation['status']): string {
       return '完了'
     case 'cancelled':
       return 'キャンセル'
+    default:
+      return status
   }
 }
 

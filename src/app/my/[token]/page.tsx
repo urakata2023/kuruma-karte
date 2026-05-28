@@ -15,7 +15,9 @@ import { ToastBanner } from '@/components/toast-banner'
 import { OnboardingTour } from '@/components/onboarding-tour'
 import { MaintenanceRecommendationsCustomerAsync } from '@/components/maintenance-recommendations-async'
 import { ReservationButton } from '@/components/reservation-button'
+import { ReservationProposalCard } from '@/components/reservation-proposal-card'
 import { Suspense } from 'react'
+import type { Reservation } from '@/lib/types'
 import {
   calcMonthlyAverageKm,
   extractMileagePoints,
@@ -102,6 +104,7 @@ export default async function OwnerMyPage({
     { data: recordsData },
     { data: photosData },
     { data: touringData },
+    { data: proposalData },
   ] = await Promise.all([
     admin
       .from('customers')
@@ -130,6 +133,14 @@ export default async function OwnerMyPage({
       .select('*')
       .eq('vehicle_id', vehicle.id)
       .order('touring_date', { ascending: false }),
+    admin
+      .from('reservations')
+      .select('*')
+      .eq('vehicle_id', vehicle.id)
+      .eq('status', 'pending_customer')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle<Reservation>(),
   ])
 
   const records = (recordsData ?? []) as MaintenanceRecord[]
@@ -234,6 +245,11 @@ export default async function OwnerMyPage({
           shopName={shop?.name ?? 'お店'}
         />
       </section>
+
+      {/* 店主からの再提案カード (Phase G) */}
+      {proposalData && (
+        <ReservationProposalCard token={token} reservation={proposalData} />
+      )}
 
       {/* ギャラリー */}
       <VehicleGallery photos={photos} heroPhotoUrl={vehicle.photo_url} />

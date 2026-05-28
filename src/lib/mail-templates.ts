@@ -89,6 +89,8 @@ export type ShopReservationNoticeParams = {
   desiredSlot: string
   purpose: string
   customerNote: string | null
+  // Phase G: 3日程キャッチボール対応
+  candidates?: { date: string; slot: string }[]
 }
 
 /**
@@ -100,14 +102,25 @@ export async function sendShopReservationNotice(
 ): Promise<void> {
   const { sendMail } = await import('./resend')
 
-  const slotJp =
-    p.desiredSlot === 'morning'
+  const slotLabel = (s: string) =>
+    s === 'morning'
       ? '午前'
-      : p.desiredSlot === 'afternoon'
+      : s === 'afternoon'
         ? '午後'
-        : p.desiredSlot === 'evening'
+        : s === 'evening'
           ? '夕方'
           : 'お任せ'
+
+  // 3日程キャッチボール: candidates が来てたら一覧表示
+  const candidatesBlock =
+    p.candidates && p.candidates.length > 0
+      ? p.candidates
+          .map(
+            (c, i) =>
+              `${['第1', '第2', '第3'][i] ?? `第${i + 1}`}希望：${c.date} (${slotLabel(c.slot)})`
+          )
+          .join('\n')
+      : `希望日：${p.desiredDate}\n時間帯：${slotLabel(p.desiredSlot)}`
 
   const body = `${p.shopName} ご担当者様
 
@@ -118,14 +131,19 @@ export async function sendShopReservationNotice(
 お名前：${p.customerName} 様
 車両　：${p.vehicleLabel}
 
-◆ ご希望
-希望日：${p.desiredDate}
-時間帯：${slotJp}
+◆ ご希望日
+${candidatesBlock}
+
+◆ ご相談
 内容　：${p.purpose}
 備考　：${p.customerNote ?? '（なし）'}
 ────────────────────
 
-管理画面の「予約管理」から承認・調整できます。
+管理画面の「予約管理」で：
+  ・いずれかの希望日で承認する
+  ・全部NGの場合は3日程の代替日を再提案する
+  ・お断りメッセージを送る
+のいずれかを返答できます。
 
 —
 このメールは くるまカルテ から自動送信されています。

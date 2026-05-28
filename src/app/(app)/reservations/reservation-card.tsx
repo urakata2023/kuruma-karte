@@ -4,10 +4,11 @@ import { useState } from 'react'
 import Link from 'next/link'
 import {
   confirmReservation,
+  proposeAlternativeDates,
   rejectReservation,
   completeReservation,
 } from './actions'
-import type { Reservation } from '@/lib/types'
+import type { Reservation, DateCandidate } from '@/lib/types'
 
 type Props = {
   reservation: Reservation & {
@@ -17,17 +18,27 @@ type Props = {
   }
 }
 
-export function ReservationCard({ reservation: r }: Props) {
-  const [mode, setMode] = useState<'idle' | 'confirm' | 'reject'>('idle')
+const slotJp = (s: string | null) =>
+  s === 'morning'
+    ? '午前'
+    : s === 'afternoon'
+      ? '午後'
+      : s === 'evening'
+        ? '夕方'
+        : 'お任せ'
 
-  const slotJp = (s: string | null) =>
-    s === 'morning'
-      ? '午前'
-      : s === 'afternoon'
-        ? '午後'
-        : s === 'evening'
-          ? '夕方'
-          : 'お任せ'
+export function ReservationCard({ reservation: r }: Props) {
+  const [mode, setMode] = useState<
+    'idle' | 'confirm' | 'propose' | 'reject'
+  >('idle')
+
+  // candidate_dates は JSON で来る (Phase G)、互換のため旧フィールドにフォールバック
+  const candidates: DateCandidate[] =
+    Array.isArray(r.candidate_dates) && r.candidate_dates.length > 0
+      ? r.candidate_dates
+      : [{ date: r.desired_date, slot: (r.desired_slot ?? 'any') as DateCandidate['slot'] }]
+
+  const isPending = r.status === 'requested' || r.status === 'pending_shop'
 
   return (
     <li className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-black">
@@ -54,10 +65,17 @@ export function ReservationCard({ reservation: r }: Props) {
           <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
             お客様のご希望
           </p>
-          <p className="mt-1 font-medium">
-            {r.desired_date} ({slotJp(r.desired_slot)})
-          </p>
-          <p className="mt-1">{r.purpose}</p>
+          <ul className="mt-1 space-y-0.5">
+            {candidates.map((c, i) => (
+              <li key={i}>
+                <span className="font-medium">
+                  {['第1', '第2', '第3'][i] ?? `第${i + 1}`}希望：
+                </span>
+                {c.date} ({slotJp(c.slot)})
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2">{r.purpose}</p>
           {r.customer_note && (
             <p className="mt-2 whitespace-pre-wrap text-zinc-600 dark:text-zinc-400">
               {r.customer_note}
@@ -71,8 +89,7 @@ export function ReservationCard({ reservation: r }: Props) {
               確定内容
             </p>
             <p className="mt-1 font-medium">
-              {r.confirmed_date ?? r.desired_date} (
-              {slotJp(r.confirmed_slot ?? r.desired_slot)})
+              {r.confirmed_date} ({slotJp(r.confirmed_slot)})
             </p>
             {r.shop_note && (
               <p className="mt-1 text-zinc-600 dark:text-zinc-400">
@@ -81,17 +98,46 @@ export function ReservationCard({ reservation: r }: Props) {
             )}
           </div>
         )}
+
+        {r.status === 'pending_customer' &&
+          r.shop_candidate_dates &&
+          r.shop_candidate_dates.length > 0 && (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                再提案中 (お客様の返答待ち)
+              </p>
+              <ul className="mt-1 space-y-0.5">
+                {r.shop_candidate_dates.map((c, i) => (
+                  <li key={i}>
+                    候補{i + 1}：{c.date} ({slotJp(c.slot)})
+                  </li>
+                ))}
+              </ul>
+              {r.shop_note && (
+                <p className="mt-1 text-zinc-600 dark:text-zinc-400">
+                  {r.shop_note}
+                </p>
+              )}
+            </div>
+          )}
       </div>
 
       {/* 操作ボタン */}
-      {r.status === 'requested' && mode === 'idle' && (
+      {isPending && mode === 'idle' && (
         <div className="mt-3 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setMode('confirm')}
             className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 dark:bg-white dark:text-black"
           >
-            ✓ 承認する
+            ✓ いずれかの日で承認
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('propose')}
+            className="rounded-md border border-blue-500 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-300"
+          >
+            📅 全部NG → 3日程を再提案
           </button>
           <button
             type="button"
@@ -108,17 +154,22 @@ export function ReservationCard({ reservation: r }: Props) {
           action={confirmReservation.bind(null, r.id)}
           className="mt-3 space-y-2 rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950"
         >
-          <p className="text-xs font-semibold">承認内容（希望日と違ってもOK）</p>
+          <p className="text-xs font-semibold">承認する候補を選んでください</p>
           <div className="grid grid-cols-2 gap-2">
-            <input
+            <select
               name="confirmed_date"
-              type="date"
-              defaultValue={r.desired_date}
+              defaultValue={candidates[0]?.date}
               className="rounded-md border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-950"
-            />
+            >
+              {candidates.map((c, i) => (
+                <option key={i} value={c.date}>
+                  {['第1', '第2', '第3'][i] ?? `第${i + 1}`}希望: {c.date}
+                </option>
+              ))}
+            </select>
             <select
               name="confirmed_slot"
-              defaultValue={r.desired_slot ?? 'any'}
+              defaultValue={candidates[0]?.slot}
               className="rounded-md border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-950"
             >
               <option value="morning">午前</option>
@@ -130,7 +181,7 @@ export function ReservationCard({ reservation: r }: Props) {
           <textarea
             name="shop_note"
             rows={2}
-            placeholder="お客様への返答メモ (任意)"
+            placeholder="お客様へのメッセージ (任意)"
             className="block w-full rounded-md border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-950"
           />
           <div className="flex gap-2">
@@ -138,7 +189,42 @@ export function ReservationCard({ reservation: r }: Props) {
               type="submit"
               className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
             >
-              この内容で承認
+              この内容で承認 (お客様にメール)
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('idle')}
+              className="text-xs opacity-60 hover:opacity-100"
+            >
+              キャンセル
+            </button>
+          </div>
+        </form>
+      )}
+
+      {mode === 'propose' && (
+        <form
+          action={proposeAlternativeDates.bind(null, r.id)}
+          className="mt-3 space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-950"
+        >
+          <p className="text-xs font-semibold">
+            📅 代替候補を3日程ご提案ください
+          </p>
+          <AltDateRow label="候補1" namePrefix="alt1" />
+          <AltDateRow label="候補2" namePrefix="alt2" />
+          <AltDateRow label="候補3" namePrefix="alt3" />
+          <textarea
+            name="shop_note"
+            rows={2}
+            placeholder="お客様へのメッセージ (例: ご希望日は満員のため別日でいかがでしょうか)"
+            className="block w-full rounded-md border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-950"
+          />
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700"
+            >
+              この3日程で再提案 (お客様にメール)
             </button>
             <button
               type="button"
@@ -156,11 +242,11 @@ export function ReservationCard({ reservation: r }: Props) {
           action={rejectReservation.bind(null, r.id)}
           className="mt-3 space-y-2 rounded-md border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950"
         >
-          <p className="text-xs font-semibold">お断り理由 (任意)</p>
+          <p className="text-xs font-semibold">お断り理由・メッセージ (任意)</p>
           <textarea
             name="shop_note"
             rows={2}
-            placeholder="ご希望日は満員のため別日でご相談、など"
+            placeholder="お客様へお伝えしたい内容"
             className="block w-full rounded-md border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-950"
           />
           <div className="flex gap-2">
@@ -168,7 +254,7 @@ export function ReservationCard({ reservation: r }: Props) {
               type="submit"
               className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
             >
-              お断りする
+              お断りする (お客様にメール)
             </button>
             <button
               type="button"
@@ -197,11 +283,50 @@ export function ReservationCard({ reservation: r }: Props) {
   )
 }
 
+function AltDateRow({
+  label,
+  namePrefix,
+}: {
+  label: string
+  namePrefix: string
+}) {
+  const today = new Date().toISOString().slice(0, 10)
+  return (
+    <div className="grid grid-cols-4 items-center gap-2">
+      <span className="text-xs font-medium">{label}</span>
+      <input
+        type="date"
+        name={`${namePrefix}_date`}
+        min={today}
+        className="col-span-2 rounded-md border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-950"
+      />
+      <select
+        name={`${namePrefix}_slot`}
+        defaultValue="any"
+        className="rounded-md border border-zinc-300 px-1 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-950"
+      >
+        <option value="any">お任せ</option>
+        <option value="morning">午前</option>
+        <option value="afternoon">午後</option>
+        <option value="evening">夕方</option>
+      </select>
+    </div>
+  )
+}
+
 function StatusPill({ status }: { status: Reservation['status'] }) {
   const styles: Record<Reservation['status'], { bg: string; label: string }> = {
     requested: {
       bg: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
       label: '🔔 承認待ち',
+    },
+    pending_shop: {
+      bg: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
+      label: '🔔 承認待ち',
+    },
+    pending_customer: {
+      bg: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
+      label: '📨 お客様返答待ち',
     },
     confirmed: {
       bg: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',

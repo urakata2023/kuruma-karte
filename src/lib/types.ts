@@ -93,19 +93,38 @@ export type TouringRecord = {
   updated_at: string
 }
 
+export type SlotKind = 'morning' | 'afternoon' | 'evening' | 'any'
+
+export type DateCandidate = {
+  date: string // YYYY-MM-DD
+  slot: SlotKind
+}
+
 export type Reservation = {
   id: string
   shop_id: string
   customer_id: string
   vehicle_id: string
+  // 旧フィールド (互換のため残す)
   desired_date: string
-  desired_slot: 'morning' | 'afternoon' | 'evening' | 'any' | null
+  desired_slot: SlotKind | null
   purpose: string
   customer_note: string | null
   confirmed_date: string | null
-  confirmed_slot: 'morning' | 'afternoon' | 'evening' | null
+  confirmed_slot: SlotKind | null
   shop_note: string | null
-  status: 'requested' | 'confirmed' | 'rejected' | 'completed' | 'cancelled'
+  // Phase G: 3日程キャッチボール
+  candidate_dates: DateCandidate[]
+  shop_candidate_dates: DateCandidate[]
+  round: number
+  status:
+    | 'requested'
+    | 'pending_shop'
+    | 'pending_customer'
+    | 'confirmed'
+    | 'rejected'
+    | 'completed'
+    | 'cancelled'
   created_at: string
   updated_at: string
 }
