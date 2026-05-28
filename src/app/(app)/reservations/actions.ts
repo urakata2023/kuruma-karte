@@ -5,21 +5,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendMail } from '@/lib/resend'
 import { sendLineText } from '@/lib/line'
 import { revalidatePath } from 'next/cache'
-import type { DateCandidate, SlotKind } from '@/lib/types'
+import type { DateCandidate } from '@/lib/types'
+import { parseSlotValue, slotLabel } from '@/lib/reservation-slots'
 
-function slotJp(s: SlotKind | string | null | undefined): string {
-  if (s === 'morning') return '午前'
-  if (s === 'afternoon') return '午後'
-  if (s === 'evening') return '夕方'
-  return 'お任せ'
-}
-
-function parseSlot(v: unknown): SlotKind {
-  if (v === 'morning' || v === 'afternoon' || v === 'evening' || v === 'any') {
-    return v
-  }
-  return 'any'
-}
+const slotJp = slotLabel
+const parseSlot = parseSlotValue
 
 /**
  * お客様にメール (+ LINE) で返答を送る共通ヘルパー

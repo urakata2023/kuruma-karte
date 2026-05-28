@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { acceptShopProposal } from '@/app/my/[token]/reservation/actions'
 import type { Reservation, DateCandidate } from '@/lib/types'
+import { slotLabel } from '@/lib/reservation-slots'
 
 /**
  * お客様マイページの「店主からの再提案カード」 (Phase G)
@@ -23,14 +24,7 @@ export function ReservationProposalCard({
 
   if (candidates.length === 0) return null
 
-  const slotJp = (s: string) =>
-    s === 'morning'
-      ? '午前'
-      : s === 'afternoon'
-        ? '午後'
-        : s === 'evening'
-          ? '夕方'
-          : 'お任せ'
+  const slotJp = slotLabel
 
   function handleAccept() {
     const c = candidates[selectedIdx]

@@ -93,11 +93,18 @@ export type TouringRecord = {
   updated_at: string
 }
 
-export type SlotKind = 'morning' | 'afternoon' | 'evening' | 'any'
+/**
+ * 予約時間帯。
+ * 新: '09:00' ... '18:00' / 'any' (1時間刻み、Phase G改修)
+ * 旧: 'morning' / 'afternoon' / 'evening' / 'any' (後方互換のため許容)
+ *
+ * → 型は string に緩めて、表示時に reservation-slots.ts の slotLabel() で吸収。
+ */
+export type SlotKind = string
 
 export type DateCandidate = {
   date: string // YYYY-MM-DD
-  slot: SlotKind
+  slot: string // SlotKind
 }
 
 export type Reservation = {

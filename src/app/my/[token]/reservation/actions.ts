@@ -5,15 +5,13 @@ import { sendShopReservationNotice } from '@/lib/mail-templates'
 import { sendLineText } from '@/lib/line'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import type { DateCandidate, SlotKind } from '@/lib/types'
+import type { DateCandidate } from '@/lib/types'
+import { parseSlotValue, slotLabel } from '@/lib/reservation-slots'
 
 export type ReservationFormState = { error?: string } | undefined
 
-function parseSlot(v: unknown): SlotKind {
-  if (v === 'morning' || v === 'afternoon' || v === 'evening' || v === 'any') {
-    return v
-  }
-  return 'any'
+function parseSlot(v: unknown): string {
+  return parseSlotValue(v)
 }
 
 function pickCandidate(
@@ -243,9 +241,7 @@ export async function acceptShopProposal(
   )
 }
 
-function slotJp(s: SlotKind | null | undefined): string {
-  if (s === 'morning') return '午前'
-  if (s === 'afternoon') return '午後'
-  if (s === 'evening') return '夕方'
-  return 'お任せ'
+// 既存呼び出し互換のため、共通 slotLabel をラップ
+function slotJp(s: string | null | undefined): string {
+  return slotLabel(s)
 }

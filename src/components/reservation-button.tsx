@@ -2,6 +2,8 @@
 
 import { useActionState, useState } from 'react'
 import { requestReservation } from '@/app/my/[token]/reservation/actions'
+import { RESERVATION_SLOTS } from '@/lib/reservation-slots'
+import { SubmitButton } from '@/components/submit-button'
 
 type State = { error?: string } | undefined
 
@@ -24,7 +26,7 @@ export function ReservationButton({
 }) {
   const [open, setOpen] = useState(false)
   const action = requestReservation.bind(null, token)
-  const [state, formAction, pending] = useActionState<State, FormData>(
+  const [state, formAction] = useActionState<State, FormData>(
     action,
     undefined
   )
@@ -135,17 +137,16 @@ export function ReservationButton({
                 </p>
               )}
 
-              <button
-                type="submit"
-                disabled={pending}
+              <SubmitButton
+                pendingLabel="送信中…"
                 className="w-full rounded-md px-4 py-3 text-sm font-semibold disabled:opacity-50"
                 style={{
                   background: 'var(--theme-primary)',
                   color: 'var(--theme-primary-fg)',
                 }}
               >
-                {pending ? '送信中…' : 'この内容で予約をお願いする'}
-              </button>
+                この内容で予約をお願いする
+              </SubmitButton>
 
               <p className="text-center text-[10px] opacity-50">
                 ご返答はメールでお届けします
@@ -192,10 +193,11 @@ function CandidateField({
           defaultValue="any"
           className="rounded-md border border-zinc-300 px-2 py-2 text-sm focus:outline-none dark:border-zinc-700 dark:bg-zinc-950"
         >
-          <option value="any">お任せ</option>
-          <option value="morning">午前</option>
-          <option value="afternoon">午後</option>
-          <option value="evening">夕方</option>
+          {RESERVATION_SLOTS.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
         </select>
       </div>
     </div>

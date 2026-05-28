@@ -9,6 +9,8 @@ import {
   completeReservation,
 } from './actions'
 import type { Reservation, DateCandidate } from '@/lib/types'
+import { RESERVATION_SLOTS, slotLabel } from '@/lib/reservation-slots'
+import { SubmitButton } from '@/components/submit-button'
 
 type Props = {
   reservation: Reservation & {
@@ -18,14 +20,7 @@ type Props = {
   }
 }
 
-const slotJp = (s: string | null) =>
-  s === 'morning'
-    ? '午前'
-    : s === 'afternoon'
-      ? '午後'
-      : s === 'evening'
-        ? '夕方'
-        : 'お任せ'
+const slotJp = slotLabel
 
 export function ReservationCard({ reservation: r }: Props) {
   const [mode, setMode] = useState<
@@ -169,13 +164,14 @@ export function ReservationCard({ reservation: r }: Props) {
             </select>
             <select
               name="confirmed_slot"
-              defaultValue={candidates[0]?.slot}
+              defaultValue={candidates[0]?.slot ?? 'any'}
               className="rounded-md border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-950"
             >
-              <option value="morning">午前</option>
-              <option value="afternoon">午後</option>
-              <option value="evening">夕方</option>
-              <option value="any">お任せ</option>
+              {RESERVATION_SLOTS.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
             </select>
           </div>
           <textarea
@@ -185,12 +181,12 @@ export function ReservationCard({ reservation: r }: Props) {
             className="block w-full rounded-md border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-950"
           />
           <div className="flex gap-2">
-            <button
-              type="submit"
-              className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+            <SubmitButton
+              pendingLabel="送信中…"
+              className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
             >
               この内容で承認 (お客様にメール)
-            </button>
+            </SubmitButton>
             <button
               type="button"
               onClick={() => setMode('idle')}
@@ -220,12 +216,12 @@ export function ReservationCard({ reservation: r }: Props) {
             className="block w-full rounded-md border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-950"
           />
           <div className="flex gap-2">
-            <button
-              type="submit"
-              className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700"
+            <SubmitButton
+              pendingLabel="送信中…"
+              className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
             >
               この3日程で再提案 (お客様にメール)
-            </button>
+            </SubmitButton>
             <button
               type="button"
               onClick={() => setMode('idle')}
@@ -250,12 +246,12 @@ export function ReservationCard({ reservation: r }: Props) {
             className="block w-full rounded-md border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-950"
           />
           <div className="flex gap-2">
-            <button
-              type="submit"
-              className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
+            <SubmitButton
+              pendingLabel="送信中…"
+              className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
             >
               お断りする (お客様にメール)
-            </button>
+            </SubmitButton>
             <button
               type="button"
               onClick={() => setMode('idle')}
@@ -270,12 +266,12 @@ export function ReservationCard({ reservation: r }: Props) {
       {r.status === 'confirmed' && (
         <div className="mt-3">
           <form action={completeReservation.bind(null, r.id)}>
-            <button
-              type="submit"
-              className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700"
+            <SubmitButton
+              pendingLabel="処理中…"
+              className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
             >
               ✓ 入庫済みにする
-            </button>
+            </SubmitButton>
           </form>
         </div>
       )}
@@ -305,10 +301,11 @@ function AltDateRow({
         defaultValue="any"
         className="rounded-md border border-zinc-300 px-1 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-950"
       >
-        <option value="any">お任せ</option>
-        <option value="morning">午前</option>
-        <option value="afternoon">午後</option>
-        <option value="evening">夕方</option>
+        {RESERVATION_SLOTS.map((s) => (
+          <option key={s.value} value={s.value}>
+            {s.label}
+          </option>
+        ))}
       </select>
     </div>
   )
