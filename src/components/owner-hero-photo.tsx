@@ -125,19 +125,27 @@ export function OwnerHeroPhoto({
   // 写真登録済み：表示＋「変更」ボタン
   return (
     <>
-      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl">
+      <div
+        className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl shadow-2xl ring-1"
+        style={{
+          // テーマ色のかすかなリング + 強めシャドウで車写真を引き立てる
+          // @ts-expect-error - CSS variable
+          '--tw-ring-color':
+            'color-mix(in srgb, var(--theme-accent) 30%, transparent)',
+        }}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={currentUrl} alt={alt} className="h-full w-full object-cover" />
         {busy && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white">
-            <LoadingOverlay label="アップロード中" />
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-white backdrop-blur-sm">
+            <LoadingOverlay label="アップロード中" progress={progress} />
           </div>
         )}
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={busy}
-          className="absolute bottom-3 right-3 rounded-full bg-black/70 px-3 py-1.5 text-xs font-medium text-white backdrop-blur hover:bg-black/85 disabled:opacity-50"
+          className="absolute bottom-3 right-3 rounded-full bg-black/70 px-3 py-1.5 text-xs font-medium text-white backdrop-blur transition-colors hover:bg-black/90 disabled:opacity-50"
         >
           📷 写真を変更
         </button>

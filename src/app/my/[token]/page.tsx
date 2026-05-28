@@ -208,30 +208,79 @@ export default async function OwnerMyPage({
         </div>
       </header>
 
-      {/* ヒーロー：愛車写真（未登録ならタップで追加） */}
+      {/* ヒーロー：車ショールーム風 */}
       <section
-        className="relative"
+        className="relative overflow-hidden"
         style={{
-          background:
-            'linear-gradient(135deg, var(--surface-2) 0%, var(--surface-3) 100%)',
+          background: 'var(--canvas)',
         }}
       >
-        <div className="mx-auto max-w-2xl px-6 py-12">
-          <OwnerHeroPhoto
-            token={token}
-            currentUrl={vehicle.photo_url}
-            alt={vehicle.model ?? '愛車'}
-          />
-          <div className="mt-6 text-center">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {vehicle.model ?? 'お車'}
-            </h1>
-            {vehicle.plate_number && (
-              <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                <PlateDisplay plate={vehicle.plate_number} />
-              </p>
-            )}
+        {/* デコ：右上にテーマカラーの大きなブラー */}
+        <div
+          className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full opacity-20 blur-3xl"
+          style={{ background: 'var(--theme-accent)' }}
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute -bottom-32 -left-32 h-96 w-96 rounded-full opacity-10 blur-3xl"
+          style={{ background: 'var(--theme-primary)' }}
+          aria-hidden
+        />
+
+        <div className="relative mx-auto max-w-3xl px-6 pb-10 pt-8">
+          {/* 英字ステンシル風: YOUR VEHICLE */}
+          <p
+            className="text-eyebrow text-center"
+            style={{
+              color: 'var(--theme-accent)',
+              letterSpacing: '0.4em',
+            }}
+          >
+            Your Vehicle
+          </p>
+
+          {/* 車種名: ディスプレイフォントで巨大に */}
+          <h1
+            className="mt-3 text-center text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl"
+            style={{
+              color: 'var(--ink)',
+              fontFamily: 'var(--font-display), sans-serif',
+            }}
+          >
+            {vehicle.model ?? 'お車'}
+          </h1>
+
+          {/* 写真エリア */}
+          <div className="mt-8">
+            <OwnerHeroPhoto
+              token={token}
+              currentUrl={vehicle.photo_url}
+              alt={vehicle.model ?? '愛車'}
+            />
           </div>
+
+          {/* ナンバープレート風カード */}
+          {vehicle.plate_number && (
+            <div className="mt-6 flex justify-center">
+              <div
+                className="inline-flex items-center gap-3 rounded-lg border-2 px-5 py-3 shadow-md"
+                style={{
+                  background: 'var(--surface-1)',
+                  borderColor: 'var(--theme-accent)',
+                }}
+              >
+                <span
+                  className="text-eyebrow"
+                  style={{ color: 'var(--ink-tertiary)' }}
+                >
+                  Plate
+                </span>
+                <span style={{ color: 'var(--ink)' }}>
+                  <PlateDisplay plate={vehicle.plate_number} />
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
