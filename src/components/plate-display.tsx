@@ -89,19 +89,19 @@ function PlatePhysical({
 
   return (
     <span
-      className="inline-flex flex-col items-center rounded-[4px] border-[2.5px] shadow-md"
+      className="inline-flex flex-col items-center rounded-[3px] border-[2px] shadow-sm"
       style={{
         background: plateBg,
         borderColor: plateBorder,
         color: plateText,
-        padding: '4px 12px 6px',
-        minWidth: '180px',
+        padding: '2px 9px 3px',
+        minWidth: '128px',
         fontFeatureSettings: '"tnum"',
       }}
     >
       {/* 上段: 地名 + 分類番号 */}
       <span
-        className="flex w-full items-baseline justify-center gap-3 leading-none"
+        className="flex w-full items-baseline justify-center gap-2 leading-none"
         style={{
           fontFamily:
             '"Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", sans-serif',
@@ -109,7 +109,7 @@ function PlatePhysical({
       >
         <span
           style={{
-            fontSize: '13px',
+            fontSize: '10px',
             fontWeight: 700,
             letterSpacing: '0.05em',
           }}
@@ -118,7 +118,7 @@ function PlatePhysical({
         </span>
         <span
           style={{
-            fontSize: '15px',
+            fontSize: '11px',
             fontWeight: 700,
             letterSpacing: '0.05em',
             fontVariantNumeric: 'tabular-nums',
@@ -128,26 +128,26 @@ function PlatePhysical({
         </span>
       </span>
 
-      {/* 区切り線 (本物のプレートにはあるくっきりした2分割線ではなく内部だけ薄く) */}
+      {/* 区切り線 */}
       <span
         aria-hidden
         style={{
           display: 'block',
           width: '92%',
           height: '1px',
-          background: 'color-mix(in srgb, currentColor 20%, transparent)',
-          marginTop: '3px',
-          marginBottom: '3px',
+          background: 'color-mix(in srgb, currentColor 18%, transparent)',
+          marginTop: '2px',
+          marginBottom: '2px',
         }}
       />
 
       {/* 下段: ひらがな + 一連番号 */}
-      <span className="flex w-full items-baseline justify-center gap-2 leading-none">
+      <span className="flex w-full items-baseline justify-center gap-1.5 leading-none">
         <span
           style={{
             fontFamily:
               '"Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", sans-serif',
-            fontSize: '20px',
+            fontSize: '15px',
             fontWeight: 700,
           }}
         >
@@ -157,7 +157,7 @@ function PlatePhysical({
           style={{
             fontFamily:
               '"SF Mono", "JetBrains Mono", "Geist Mono", monospace',
-            fontSize: '28px',
+            fontSize: '21px',
             fontWeight: 800,
             letterSpacing: '0.02em',
             fontVariantNumeric: 'tabular-nums',
