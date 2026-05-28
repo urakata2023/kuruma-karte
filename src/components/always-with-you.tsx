@@ -37,9 +37,8 @@ export function AlwaysWithYou({ startIso }: { startIso: string }) {
   return (
     <section className="mx-auto w-full max-w-2xl px-6 pt-6">
       <div
-        className="relative overflow-hidden rounded-3xl border p-8 shadow-2xl sm:p-10"
+        className="relative overflow-hidden rounded-3xl border px-5 pb-6 pt-5 shadow-2xl sm:px-7"
         style={{
-          // マットブラック筐体: 上から下にかすかなグラデで奥行き
           background:
             'linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 50%, #050505 100%)',
           borderColor: '#2a2a2a',
@@ -55,30 +54,54 @@ export function AlwaysWithYou({ startIso }: { startIso: string }) {
           aria-hidden
         />
 
-        {/* 上部ラベル */}
-        <p
-          className="text-center text-[10px] uppercase tracking-[0.55em]"
-          style={{
-            fontFamily: 'var(--font-display), sans-serif',
-            color: 'color-mix(in srgb, var(--theme-accent) 75%, white)',
-          }}
-        >
-          Always with you
-        </p>
+        {/* 上部ラベル: 大きく、階段組み風で「機械の銘板」感 */}
+        <div className="flex items-center justify-center gap-3">
+          <span
+            className="h-px flex-1 max-w-[60px]"
+            style={{
+              background:
+                'linear-gradient(90deg, transparent, color-mix(in srgb, var(--theme-accent) 60%, transparent))',
+            }}
+            aria-hidden
+          />
+          <p
+            className="text-center uppercase"
+            style={{
+              fontFamily: 'var(--font-display), sans-serif',
+              fontSize: 'clamp(0.95rem, 3vw, 1.25rem)',
+              fontWeight: 700,
+              letterSpacing: '0.42em',
+              lineHeight: 1,
+              color: '#ffffff',
+              textShadow:
+                '0 0 20px color-mix(in srgb, var(--theme-accent) 50%, transparent)',
+            }}
+          >
+            Always With You
+          </p>
+          <span
+            className="h-px flex-1 max-w-[60px]"
+            style={{
+              background:
+                'linear-gradient(90deg, color-mix(in srgb, var(--theme-accent) 60%, transparent), transparent)',
+            }}
+            aria-hidden
+          />
+        </div>
 
         {/* フリップクロックセル */}
-        <div className="mt-6 grid grid-cols-6 gap-1.5 sm:gap-2">
+        <div className="mt-4 grid grid-cols-6 gap-1.5 sm:gap-2">
           {cells.map((c) => (
             <FlipCell key={c.label} label={c.label} value={c.value} />
           ))}
         </div>
 
-        {/* スクリプトサイン (大きく) */}
+        {/* スクリプトサイン */}
         <p
-          className="mt-8 text-center"
+          className="mt-4 text-center"
           style={{
             fontFamily: 'var(--font-script), cursive',
-            fontSize: 'clamp(1.75rem, 5vw, 2.5rem)',
+            fontSize: 'clamp(1.6rem, 4.5vw, 2.2rem)',
             lineHeight: 1,
             color:
               'color-mix(in srgb, var(--theme-accent) 70%, white)',
@@ -102,7 +125,7 @@ function FlipCell({ label, value }: { label: string; value: number }) {
   const padded = String(Math.max(0, value)).padStart(2, '0')
   return (
     <div
-      className="relative aspect-[3/4] overflow-hidden rounded-md"
+      className="relative aspect-[4/5] overflow-hidden rounded-md"
       style={{
         background:
           'linear-gradient(180deg, #1e1e1e 0%, #0d0d0d 50%, #0d0d0d 50%, #161616 100%)',
