@@ -23,72 +23,88 @@ export function AlwaysWithYou({ startIso }: { startIso: string }) {
   return (
     <section className="mx-auto w-full max-w-2xl px-6 pt-6">
       <div
-        className="relative overflow-hidden rounded-2xl border p-8 text-center shadow-xl"
+        className="relative overflow-hidden rounded-2xl border p-10 text-center shadow-2xl"
         style={{
-          // テーマ駆動: primary背景 + accent影響のグラデーション
-          background:
-            'linear-gradient(135deg, var(--theme-primary) 0%, color-mix(in srgb, var(--theme-primary) 80%, black) 100%)',
-          color: 'var(--theme-primary-fg)',
+          // 深い黒ベース × テーマ色のラジアルグラデで「夜のショールーム」感
+          background: `
+            radial-gradient(circle at 20% 0%, color-mix(in srgb, var(--theme-primary) 50%, transparent) 0%, transparent 50%),
+            radial-gradient(circle at 80% 100%, color-mix(in srgb, var(--theme-accent) 30%, transparent) 0%, transparent 50%),
+            linear-gradient(180deg, #0a0a0a 0%, #050505 100%)
+          `,
+          color: '#ffffff',
           borderColor:
-            'color-mix(in srgb, var(--theme-primary-fg) 20%, transparent)',
+            'color-mix(in srgb, var(--theme-accent) 25%, transparent)',
         }}
       >
-        {/* デコ：上下のドットライン */}
+        {/* 微細なグレインノイズ風: 細い罫線で奥行き */}
         <div
-          className="absolute inset-x-6 top-3 flex justify-between text-[6px]"
+          className="pointer-events-none absolute inset-0"
           style={{
-            color:
-              'color-mix(in srgb, var(--theme-primary-fg) 30%, transparent)',
+            background:
+              'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.015) 3px, rgba(255,255,255,0.015) 4px)',
           }}
-        >
-          {Array.from({ length: 40 }).map((_, i) => (
-            <span key={i}>●</span>
-          ))}
-        </div>
+          aria-hidden
+        />
+
+        {/* 装飾: 左上に細い縦バー */}
         <div
-          className="absolute inset-x-6 bottom-3 flex justify-between text-[6px]"
+          className="absolute left-6 top-6 h-12 w-px"
           style={{
-            color:
-              'color-mix(in srgb, var(--theme-primary-fg) 30%, transparent)',
+            background:
+              'linear-gradient(180deg, var(--theme-accent), transparent)',
           }}
-        >
-          {Array.from({ length: 40 }).map((_, i) => (
-            <span key={i}>●</span>
-          ))}
+          aria-hidden
+        />
+        {/* 装飾: 右下に細い縦バー */}
+        <div
+          className="absolute bottom-6 right-6 h-12 w-px"
+          style={{
+            background:
+              'linear-gradient(0deg, var(--theme-accent), transparent)',
+          }}
+          aria-hidden
+        />
+
+        <div className="relative">
+          <p
+            className="text-[10px] uppercase tracking-[0.55em]"
+            style={{
+              fontFamily: 'var(--font-display), sans-serif',
+              color:
+                'color-mix(in srgb, var(--theme-accent) 80%, white)',
+            }}
+          >
+            Always with you
+          </p>
+
+          <p
+            className="mt-7 text-3xl sm:text-4xl"
+            style={{
+              fontFamily: 'var(--font-display), sans-serif',
+              fontVariantNumeric: 'tabular-nums',
+              color: 'var(--theme-accent)',
+              textShadow:
+                '0 0 30px color-mix(in srgb, var(--theme-accent) 40%, transparent)',
+            }}
+          >
+            {now ? <Counter from={from} to={now} /> : <Placeholder />}
+          </p>
+
+          {/* スクリプトフォント (Caveat) でサイン風 */}
+          <p
+            className="mt-7"
+            style={{
+              fontFamily: 'var(--font-script), cursive',
+              fontSize: '1.5rem',
+              lineHeight: 1,
+              color:
+                'color-mix(in srgb, var(--theme-accent) 60%, white)',
+              fontStyle: 'italic',
+            }}
+          >
+            Keep on rolling.
+          </p>
         </div>
-
-        <p
-          className="text-xs uppercase tracking-[0.5em]"
-          style={{
-            fontFamily: 'var(--font-display), sans-serif',
-            color:
-              'color-mix(in srgb, var(--theme-primary-fg) 70%, transparent)',
-          }}
-        >
-          Always with you
-        </p>
-
-        <p
-          className="mt-5 text-2xl sm:text-3xl"
-          style={{
-            fontFamily: 'var(--font-display), sans-serif',
-            fontVariantNumeric: 'tabular-nums',
-            color: 'var(--theme-accent)',
-          }}
-        >
-          {now ? <Counter from={from} to={now} /> : <Placeholder />}
-        </p>
-
-        <p
-          className="mt-5 text-[11px] uppercase tracking-[0.3em]"
-          style={{
-            fontFamily: 'var(--font-display), sans-serif',
-            color:
-              'color-mix(in srgb, var(--theme-primary-fg) 60%, transparent)',
-          }}
-        >
-          Keep on rolling.
-        </p>
       </div>
     </section>
   )
@@ -124,7 +140,10 @@ function Unit({ children }: { children: React.ReactNode }) {
   return (
     <span
       style={{
-        color: 'color-mix(in srgb, var(--theme-accent) 60%, transparent)',
+        color: 'color-mix(in srgb, var(--theme-accent) 45%, transparent)',
+        fontSize: '0.65em',
+        marginLeft: '0.05em',
+        marginRight: '0.15em',
       }}
     >
       {children}

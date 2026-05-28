@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Caveat } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 
@@ -19,6 +19,14 @@ const displayFont = localFont({
   variable: "--font-display",
   display: "swap",
   weight: "700",
+});
+
+// スクリプトフォント (Caveat Bold) - 署名・キャッチコピー風用 (Phase M+)
+const scriptFont = Caveat({
+  variable: "--font-script",
+  subsets: ["latin"],
+  weight: "700",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -54,7 +62,7 @@ export default function RootLayout({
   return (
     <html
       lang="ja"
-      className={`${geistSans.variable} ${geistMono.variable} ${displayFont.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${displayFont.variable} ${scriptFont.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
