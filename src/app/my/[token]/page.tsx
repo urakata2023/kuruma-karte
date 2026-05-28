@@ -8,7 +8,7 @@ import { VehicleGallery } from '@/components/vehicle-gallery'
 import { ShareButton } from '@/components/share-button'
 import { AlwaysWithYou } from '@/components/always-with-you'
 import { OwnerHeroPhoto } from '@/components/owner-hero-photo'
-import { PlateDisplay } from '@/components/plate-display'
+import { PlateCollapsible } from '@/components/plate-collapsible'
 import { TouringList } from '@/components/touring-list'
 import { CollapsibleMap } from '@/components/collapsible-map'
 import { ToastBanner } from '@/components/toast-banner'
@@ -227,7 +227,7 @@ export default async function OwnerMyPage({
           aria-hidden
         />
 
-        <div className="relative mx-auto max-w-3xl px-6 pb-10 pt-8">
+        <div className="relative mx-auto max-w-3xl px-6 pb-4 pt-8">
           {/* 英字ステンシル風: YOUR VEHICLE */}
           <p
             className="text-eyebrow text-center"
@@ -251,7 +251,7 @@ export default async function OwnerMyPage({
           </h1>
 
           {/* 写真エリア */}
-          <div className="mt-8">
+          <div className="mt-7">
             <OwnerHeroPhoto
               token={token}
               currentUrl={vehicle.photo_url}
@@ -259,17 +259,21 @@ export default async function OwnerMyPage({
             />
           </div>
 
-          {/* 物理ナンバープレート (本物の構造を再現) */}
+          {/* 折りたたみ式ナンバープレート (デフォルト隠し) */}
           {vehicle.plate_number && (
-            <div className="mt-7 flex justify-center">
-              <PlateDisplay plate={vehicle.plate_number} />
+            <div className="mt-5">
+              <PlateCollapsible plate={vehicle.plate_number} />
             </div>
           )}
         </div>
       </section>
 
-      {/* ALWAYS WITH YOU カウンター */}
-      {startIso && <AlwaysWithYou startIso={startIso} />}
+      {/* ALWAYS WITH YOU カウンター — 写真エリアと一体化させる (mt なし) */}
+      {startIso && (
+        <div className="-mt-2">
+          <AlwaysWithYou startIso={startIso} />
+        </div>
+      )}
 
       {/* AIからの「次のおすすめ整備」 — Phase 11 */}
       <Suspense
