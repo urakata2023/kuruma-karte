@@ -65,6 +65,15 @@ export async function signup(
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) return { error: error.message }
     if (!data.user) return { error: '登録に失敗しました' }
+    // Supabase Auth は Confirm Email OFF 時に既存ユーザーをエラー無しで
+    // 返すケースがある（identities が空配列で来る）。それを既存ユーザーとして
+    // ブロックしないと、shop_members 二重登録などが起きる
+    if ((data.user.identities ?? []).length === 0) {
+      return {
+        error:
+          'このメールアドレスは既に登録されています。ログイン画面からログインしてください。',
+      }
+    }
 
     // shop_members に追加 + 招待を used_at で塞ぐ
     const { error: memErr } = await admin.from('shop_members').insert({
@@ -91,6 +100,14 @@ export async function signup(
   const { data, error } = await supabase.auth.signUp({ email, password })
   if (error) return { error: error.message }
   if (!data.user) return { error: '登録に失敗しました（ユーザー作成失敗）' }
+  // 既存ユーザー検知（上記コメント参照）。これがないと「同じメアドで別店名」を
+  // 何度も登録できてしまい、shops が永遠に増殖する事故になる
+  if ((data.user.identities ?? []).length === 0) {
+    return {
+      error:
+        'このメールアドレスは既に登録されています。ログイン画面からログインしてください。',
+    }
+  }
 
   // shops レコード作成 (admin client で RLS バイパス、まだメンバー登録前なので)
   const admin = createAdminClient()

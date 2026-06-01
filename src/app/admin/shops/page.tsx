@@ -13,6 +13,7 @@ type ShopRow = {
   subscription_status: string | null
   trial_ends_at: string | null
   created_at: string
+  owner_user_id: string | null
 }
 
 type CountAgg = { shop_id: string; count: number }
@@ -29,7 +30,7 @@ export default async function AdminShopsPage() {
   const { data: shops } = await admin
     .from('shops')
     .select(
-      'id, name, phone, plan, theme, subscription_status, trial_ends_at, created_at'
+      'id, name, phone, plan, theme, subscription_status, trial_ends_at, created_at, owner_user_id'
     )
     .order('created_at', { ascending: false })
     .returns<ShopRow[]>()
@@ -37,6 +38,21 @@ export default async function AdminShopsPage() {
   const shopIds = (shops ?? []).map((s) => s.id)
   if (shopIds.length === 0) {
     return <EmptyState />
+  }
+
+  // owner_user_id → email を解決（admin auth API で全ユーザー一括取得 → Map化）
+  // 店舗数 × ユーザー数が爆発する規模に達したら改めて最適化する
+  const emailByUserId = new Map<string, string>()
+  try {
+    const { data: usersPage } = await admin.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000,
+    })
+    for (const u of usersPage?.users ?? []) {
+      if (u.email) emailByUserId.set(u.id, u.email)
+    }
+  } catch {
+    // 取得失敗してもページは描画する（メール列が空欄になるだけ）
   }
 
   // shop_id ごとの集計（PostgRESTでは GROUP BY 直接できないのでクライアント側で集計）
@@ -91,7 +107,10 @@ export default async function AdminShopsPage() {
         : daysSinceActive >= 30
         ? 'dormant'
         : 'idle'
-    return { shop: s, cust, veh, rec, last, daysSinceActive, status }
+    const email = s.owner_user_id
+      ? emailByUserId.get(s.owner_user_id) ?? null
+      : null
+    return { shop: s, cust, veh, rec, last, daysSinceActive, status, email }
   })
 
   return (
@@ -132,11 +151,34 @@ export default async function AdminShopsPage() {
                   >
                     {r.shop.name}
                   </Link>
-                  {r.shop.phone && (
-                    <p className="mt-0.5 text-xs text-zinc-500">
-                      {r.shop.phone}
-                    </p>
-                  )}
+                  <div className="mt-1 space-y-0.5 text-xs leading-snug text-zinc-500">
+                    {r.email ? (
+                      <p>
+                        ✉{' '}
+                        <a
+                          href={`mailto:${r.email}`}
+                          className="hover:text-amber-300"
+                        >
+                          {r.email}
+                        </a>
+                      </p>
+                    ) : (
+                      <p className="text-zinc-600">✉ —</p>
+                    )}
+                    {r.shop.phone ? (
+                      <p>
+                        ☎{' '}
+                        <a
+                          href={`tel:${r.shop.phone}`}
+                          className="hover:text-amber-300"
+                        >
+                          {r.shop.phone}
+                        </a>
+                      </p>
+                    ) : (
+                      <p className="text-zinc-600">☎ —</p>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-zinc-300">
                   {formatJP(r.shop.created_at)}
