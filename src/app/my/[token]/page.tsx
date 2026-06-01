@@ -483,27 +483,61 @@ function StatCard({
   value: string
   tone?: 'normal' | 'warn' | 'danger'
 }) {
-  const toneClass =
+  // tone は左の縦バーで表現する（テーマ色と喧嘩させない・値の可読性を担保する）
+  const accentBar =
     tone === 'danger'
-      ? 'border-red-300 bg-red-50 dark:border-red-900 dark:bg-red-950'
+      ? '#dc2626'
       : tone === 'warn'
-      ? 'border-orange-300 bg-orange-50 dark:border-orange-900 dark:bg-orange-950'
-      : 'border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black'
+      ? '#ea580c'
+      : 'var(--theme-accent)'
   return (
-    <div className={`rounded-xl border p-4 text-center ${toneClass}`}>
-      <p className="text-[10px] uppercase tracking-wide text-zinc-500">
+    <div
+      className="relative overflow-hidden rounded-xl border p-4 text-center"
+      style={{
+        background: 'var(--surface-1)',
+        borderColor: 'var(--hairline)',
+        color: 'var(--ink)',
+      }}
+    >
+      <span
+        aria-hidden
+        className="absolute inset-y-0 left-0 w-1"
+        style={{ background: accentBar, opacity: tone === 'normal' ? 0.55 : 1 }}
+      />
+      <p
+        className="text-[10px] uppercase tracking-wide"
+        style={{ color: 'var(--ink-subtle)' }}
+      >
         {label}
       </p>
-      <p className="mt-1 text-lg font-bold sm:text-xl">{value}</p>
+      <p
+        className="mt-1 text-lg font-bold sm:text-xl"
+        style={{ color: 'var(--ink)' }}
+      >
+        {value}
+      </p>
     </div>
   )
 }
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-black">
-      <p className="text-xs text-zinc-500">{label}</p>
-      <p className="mt-0.5 text-sm font-medium">{value}</p>
+    <div
+      className="rounded-lg border p-3"
+      style={{
+        background: 'var(--surface-1)',
+        borderColor: 'var(--hairline)',
+      }}
+    >
+      <p className="text-xs" style={{ color: 'var(--ink-subtle)' }}>
+        {label}
+      </p>
+      <p
+        className="mt-0.5 text-sm font-medium"
+        style={{ color: 'var(--ink)' }}
+      >
+        {value}
+      </p>
     </div>
   )
 }
