@@ -51,5 +51,20 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // /admin/* はスーパー管理者だけ。誤って漏れないよう env未設定なら全員ブロック。
+  // 通常店舗ユーザーに「管理画面の存在」を見せたくないので、403ではなく /login へ流す。
+  const isAdminPath =
+    request.nextUrl.pathname === '/admin' ||
+    request.nextUrl.pathname.startsWith('/admin/')
+  if (isAdminPath) {
+    const target = process.env.SUPER_ADMIN_EMAIL?.trim().toLowerCase() ?? ''
+    const email = user?.email?.toLowerCase() ?? ''
+    if (!target || email !== target) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+  }
+
   return supabaseResponse
 }

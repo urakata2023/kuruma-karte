@@ -22,10 +22,12 @@ export function Sidebar({
   shopName,
   themeId,
   pendingReservationCount = 0,
+  isSuperAdmin = false,
 }: {
   shopName: string
   themeId: string
   pendingReservationCount?: number
+  isSuperAdmin?: boolean
 }) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -153,6 +155,21 @@ export function Sidebar({
               />
             ))}
           </NavGroup>
+
+          {isSuperAdmin && (
+            <NavGroup title="Super Admin">
+              <NavLink
+                item={{ href: '/admin', icon: '👑', label: '俯瞰ダッシュボード' }}
+                active={isActive(pathname, '/admin')}
+                onClick={() => setMobileOpen(false)}
+              />
+              <NavLink
+                item={{ href: '/admin/shops', icon: '🏢', label: '全店舗一覧' }}
+                active={pathname.startsWith('/admin/shops')}
+                onClick={() => setMobileOpen(false)}
+              />
+            </NavGroup>
+          )}
         </nav>
 
         {/* フッター: 店舗名表示 */}

@@ -3,6 +3,7 @@ import { Sidebar } from '@/components/sidebar'
 import { TopBar } from '@/components/top-bar'
 import { getTheme } from '@/lib/themes'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isSuperAdmin } from '@/lib/admin-auth'
 
 /**
  * (app) Route Group: 管理画面の共通レイアウト (Phase L 刷新版)
@@ -18,18 +19,22 @@ export default async function AppLayout({
   const { shop } = await getCurrentShop()
   const theme = getTheme(shop.theme)
 
-  let pendingCount = 0
-  try {
-    const admin = createAdminClient()
-    const { count } = await admin
-      .from('reservations')
-      .select('id', { count: 'exact', head: true })
-      .eq('shop_id', shop.id)
-      .in('status', ['requested', 'pending_shop'])
-    pendingCount = count ?? 0
-  } catch {
-    // ignore
-  }
+  const [pendingCount, superAdmin] = await Promise.all([
+    (async () => {
+      try {
+        const admin = createAdminClient()
+        const { count } = await admin
+          .from('reservations')
+          .select('id', { count: 'exact', head: true })
+          .eq('shop_id', shop.id)
+          .in('status', ['requested', 'pending_shop'])
+        return count ?? 0
+      } catch {
+        return 0
+      }
+    })(),
+    isSuperAdmin(),
+  ])
 
   return (
     <div
@@ -41,6 +46,7 @@ export default async function AppLayout({
         shopName={shop.name}
         themeId={theme.id}
         pendingReservationCount={pendingCount}
+        isSuperAdmin={superAdmin}
       />
       <div className="flex flex-1 flex-col md:pl-64">
         <TopBar />
