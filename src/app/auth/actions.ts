@@ -85,6 +85,8 @@ export async function signup(
 
   // 通常の新規オーナー登録
   if (!shopName?.trim()) return { error: '店名を入力してください' }
+  const phone = ((formData.get('phone') as string) ?? '').trim()
+  if (!phone) return { error: '電話番号を入力してください' }
 
   const { data, error } = await supabase.auth.signUp({ email, password })
   if (error) return { error: error.message }
@@ -97,6 +99,7 @@ export async function signup(
     .insert({
       owner_user_id: data.user.id,
       name: shopName.trim(),
+      phone,
     })
     .select()
     .single<{ id: string }>()

@@ -24,19 +24,41 @@ export function SignupForm({
             </div>
           </>
         ) : (
-          <div className="space-y-1">
-            <label htmlFor="shop_name" className="block text-sm font-medium">
-              店名
-            </label>
-            <input
-              id="shop_name"
-              name="shop_name"
-              type="text"
-              required
-              placeholder="例：◯◯モータース"
-              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-900 focus:outline-none"
-            />
-          </div>
+          <>
+            <div className="space-y-1">
+              <label htmlFor="shop_name" className="block text-sm font-medium">
+                店名
+              </label>
+              <input
+                id="shop_name"
+                name="shop_name"
+                type="text"
+                required
+                placeholder="例：◯◯モータース"
+                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label htmlFor="phone" className="block text-sm font-medium">
+                お店の電話番号
+              </label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                required
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder="例：03-1234-5678"
+                pattern="[0-9\-\+\s\(\)]{10,15}"
+                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              />
+              <p className="text-xs text-zinc-500">
+                お客様への自動通知やサポート連絡に使います。あとから設定画面でも変更できます。
+              </p>
+            </div>
+          </>
         )}
 
         <div className="space-y-1">
@@ -49,7 +71,7 @@ export function SignupForm({
             type="email"
             required
             autoComplete="email"
-            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-900 focus:outline-none"
+            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
           />
         </div>
 
@@ -64,7 +86,7 @@ export function SignupForm({
             required
             minLength={8}
             autoComplete="new-password"
-            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-900 focus:outline-none"
+            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
           />
         </div>
 
