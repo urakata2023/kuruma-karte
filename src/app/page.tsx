@@ -321,6 +321,36 @@ export default function LP() {
           <p className="mt-1 text-xs text-zinc-500">
             町工場のための、お客様向け愛車マイページSaaS
           </p>
+          <nav className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-zinc-500">
+            <a
+              href="https://urakata.biz/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-zinc-900 dark:hover:text-white"
+            >
+              運営：株式会社UrakaTA
+            </a>
+            <span aria-hidden className="text-zinc-300 dark:text-zinc-700">
+              ·
+            </span>
+            <a
+              href="https://urakata.biz/privacy.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-zinc-900 dark:hover:text-white"
+            >
+              プライバシーポリシー
+            </a>
+            <span aria-hidden className="text-zinc-300 dark:text-zinc-700">
+              ·
+            </span>
+            <Link
+              href="/legal/tokushou"
+              className="hover:text-zinc-900 dark:hover:text-white"
+            >
+              特定商取引法に基づく表記
+            </Link>
+          </nav>
           <p className="mt-4 text-[10px] text-zinc-400">
             Powered by Anthropic Claude / Supabase / Vercel · © UrakaTA Inc.
           </p>

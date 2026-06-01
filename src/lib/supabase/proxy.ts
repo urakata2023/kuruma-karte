@@ -38,7 +38,8 @@ export async function updateSession(request: NextRequest) {
 
   // 未認証時、保護されたルートへのアクセスを /login にリダイレクト
   // /r/* は顧客自身の公開登録フロー、/my/* はオーナー向け愛車マイページ。どちらも認証不要
-  const publicPaths = ['/', '/login', '/signup', '/auth', '/r', '/my']
+  // /legal/* は特商法表記など、誰でも閲覧できる必要がある法定ページ
+  const publicPaths = ['/', '/login', '/signup', '/auth', '/r', '/my', '/legal']
   const isPublicPath = publicPaths.some(
     (p) =>
       request.nextUrl.pathname === p ||

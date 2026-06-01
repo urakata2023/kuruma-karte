@@ -17,7 +17,8 @@ export const config = {
      * - _next/image (画像最適化)
      * - favicon.ico
      * - 画像ファイル
+     * - /lp（静的マーケティングLP。public/lp/ を直接配信させる）
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|lp(?:/|$)|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
