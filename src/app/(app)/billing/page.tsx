@@ -64,10 +64,22 @@ export default async function BillingPage({
       )}
 
       {/* 現プラン表示 */}
-      <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-black">
-        <p className="text-xs text-zinc-500">現在のプラン</p>
+      <section
+        className="rounded-xl border p-5"
+        style={{
+          background: 'var(--surface-1)',
+          borderColor: 'var(--hairline)',
+          color: 'var(--ink)',
+        }}
+      >
+        <p className="text-xs" style={{ color: 'var(--ink-subtle)' }}>
+          現在のプラン
+        </p>
         <div className="mt-1 flex flex-wrap items-center gap-3">
-          <span className="text-2xl font-semibold">
+          <span
+            className="text-2xl font-semibold"
+            style={{ color: 'var(--ink)' }}
+          >
             {currentPlan === 'trial'
               ? '🎁 無料トライアル'
               : currentPlan === 'standard'
@@ -97,7 +109,12 @@ export default async function BillingPage({
 
       {/* プラン選択 */}
       <section>
-        <h2 className="mb-4 text-base font-semibold">プランを選ぶ</h2>
+        <h2
+          className="mb-4 text-base font-semibold"
+          style={{ color: 'var(--ink)' }}
+        >
+          プランを選ぶ
+        </h2>
         <PlanCards
           plans={PLANS}
           currentPlan={currentPlan}
@@ -105,9 +122,20 @@ export default async function BillingPage({
         />
       </section>
 
-      <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 text-xs dark:border-zinc-800 dark:bg-zinc-900">
-        <p className="font-semibold">📋 ご利用にあたって</p>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-zinc-600 dark:text-zinc-400">
+      <section
+        className="rounded-xl border p-5 text-xs"
+        style={{
+          background: 'var(--surface-2)',
+          borderColor: 'var(--hairline)',
+        }}
+      >
+        <p className="font-semibold" style={{ color: 'var(--ink)' }}>
+          📋 ご利用にあたって
+        </p>
+        <ul
+          className="mt-2 list-disc space-y-1 pl-5"
+          style={{ color: 'var(--ink-muted)' }}
+        >
           <li>新規ご登録から30日間は全機能を無料でお試しいただけます</li>
           <li>トライアル終了後も自動課金はされません（手動で選択）</li>
           <li>いつでも変更・解約可能（次回更新まで現プラン利用可）</li>
