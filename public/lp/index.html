@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>くるまカルテ｜町工場のための、お客様向け愛車マイページSaaS</title>
+  <meta name="description" content="車検通知をハガキで送る時代は終わりました。車検証を撮るだけでAIが自動入力、お客様はスマホで愛車を確認、予約と整備が自然に回り続ける。町工場のためのお客様向け愛車マイページSaaS。30日間無料・クレジットカード登録不要。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* Theme: dark, locked. Accent: ember orange (整備の灯), single accent. */
+      --bg:        #15171C;
+      --bg-2:      #1B1E25;
+      --bg-3:      #21242D;
+      --ink:       #F4F2EE;
+      --ink-dim:   #A6AAB3;
+      --ink-faint: #6E727B;
+      --line:      rgba(255,255,255,0.09);
+      --line-2:    rgba(255,255,255,0.05);
+      --accent:    #EE6C2B;
+      --accent-deep:#C9551B;
+      --accent-soft:rgba(238,108,43,0.12);
+      /* shape scale: cards 16px / pills full / inputs 10px */
+      --r-card: 16px;
+      --r-pill: 999px;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --maxw: 1180px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.85;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    .en { font-family: 'Space Grotesk', sans-serif; }
+
+    a { color: inherit; text-decoration: none; }
+
+    .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+
+    section { padding: 116px 0; position: relative; }
+
+    h1, h2, h3 { line-height: 1.32; letter-spacing: -0.01em; font-weight: 900; }
+
+    .eyebrow {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 22px;
+    }
+
+    .lead { color: var(--ink-dim); font-size: 1.04rem; max-width: 60ch; }
+
+    /* ---------- Buttons ---------- */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      font-weight: 700; font-size: 1rem; letter-spacing: 0.01em;
+      padding: 16px 30px; border-radius: var(--r-pill);
+      transition: transform 0.15s var(--ease), background 0.2s var(--ease), box-shadow 0.2s var(--ease);
+      cursor: pointer; border: none; white-space: nowrap;
+    }
+    .btn-primary { background: var(--accent); color: #14110D; box-shadow: 0 8px 26px rgba(238,108,43,0.28); }
+    .btn-primary:hover { background: #FF7C39; transform: translateY(-2px); box-shadow: 0 14px 34px rgba(238,108,43,0.36); }
+    .btn-primary:active { transform: translateY(0) scale(0.98); }
+    .btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+    .btn-arrow { font-size: 1.05em; transition: transform 0.2s var(--ease); }
+    .btn:hover .btn-arrow { transform: translateX(4px); }
+
+    /* ---------- Header ---------- */
+    .top-sentinel { position: absolute; top: 0; height: 1px; width: 1px; }
+    header {
+      position: fixed; inset: 0 0 auto 0; z-index: 50;
+      height: 72px; display: flex; align-items: center;
+      background: transparent; transition: background 0.3s var(--ease), border-color 0.3s var(--ease), backdrop-filter 0.3s var(--ease);
+      border-bottom: 1px solid transparent;
+    }
+    header.solid {
+      background: rgba(21,23,28,0.82);
+      backdrop-filter: blur(14px) saturate(150%);
+      -webkit-backdrop-filter: blur(14px) saturate(150%);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+    .brand { display: flex; align-items: center; gap: 11px; font-weight: 900; font-size: 1.12rem; letter-spacing: 0.01em; }
+    .brand-mark {
+      width: 30px; height: 30px; border-radius: 9px; flex: none;
+      background: linear-gradient(150deg, var(--accent), var(--accent-deep));
+      display: grid; place-items: center; color: #14110D; font-weight: 900; font-size: 0.95rem;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+    }
+    .nav-links { display: flex; align-items: center; gap: 34px; }
+    .nav-links a { color: var(--ink-dim); font-size: 0.92rem; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-cta { display: flex; align-items: center; gap: 18px; }
+    .nav-cta .btn { padding: 11px 22px; font-size: 0.9rem; }
+    .nav-login { color: var(--ink-dim); font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+    .nav-login:hover { color: var(--ink); }
+
+    /* ---------- Hero ---------- */
+    .hero { min-height: 100dvh; display: flex; align-items: center; padding: 128px 0 80px; overflow: hidden; }
+    .hero::before {
+      content: ""; position: absolute; z-index: 0; pointer-events: none;
+      width: 980px; height: 980px; right: -300px; top: -260px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(238,108,43,0.22), rgba(238,108,43,0) 62%);
+      filter: blur(8px);
+    }
+    .hero-grid {
+      position: relative; z-index: 1;
+      display: grid; grid-template-columns: 1.08fr 0.92fr; gap: 56px; align-items: center; width: 100%;
+    }
+    .hero-kicker {
+      display: inline-flex; align-items: center; gap: 9px; font-size: 0.84rem; font-weight: 700;
+      color: var(--ink-dim); background: var(--bg-3); border: 1px solid var(--line);
+      padding: 8px 16px; border-radius: var(--r-pill); margin-bottom: 26px;
+    }
+    .hero-kicker .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+    .hero h1 { font-size: clamp(1.9rem, 4.2vw, 3.2rem); line-height: 1.26; margin-bottom: 26px; }
+    .hero h1 .accent { color: var(--accent); }
+    .hero .lead { font-size: 1.1rem; margin-bottom: 38px; }
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+    .hero-note { margin-top: 22px; color: var(--ink-faint); font-size: 0.84rem; }
+
+    /* ---------- Device mockup (real product preview: 愛車マイページ) ---------- */
+    .device {
+      width: 300px; max-width: 100%; margin: 0 auto;
+      background: #0E1014; border-radius: 38px; padding: 12px;
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 40px 90px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.10);
+    }
+    .device-screen { background: var(--bg-2); border-radius: 28px; overflow: hidden; }
+    .device-screen--shot { background: #0B0C0F; }
+    .dvc-shot { display: block; width: 100%; height: auto; }
+    .dvc-photo { position: relative; aspect-ratio: 16/11; overflow: hidden; }
+    .dvc-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .dvc-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(14,16,20,0.85), transparent 55%); }
+    .dvc-cap { position: absolute; left: 16px; bottom: 13px; z-index: 1; }
+    .dvc-cap .car { font-weight: 700; font-size: 0.98rem; }
+    .dvc-cap .sub { font-size: 0.72rem; color: var(--ink-dim); }
+    .dvc-count { padding: 18px 18px 8px; text-align: center; border-bottom: 1px solid var(--line-2); }
+    .dvc-count .label { font-size: 0.72rem; color: var(--ink-dim); letter-spacing: 0.04em; }
+    .dvc-count .num { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 2.5rem; color: var(--accent); line-height: 1.1; }
+    .dvc-count .num small { font-size: 0.9rem; color: var(--ink); font-weight: 500; margin-left: 4px; }
+    .dvc-rows { padding: 12px 18px; }
+    .dvc-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; font-size: 0.8rem; border-bottom: 1px solid var(--line-2); }
+    .dvc-row:last-child { border-bottom: none; }
+    .dvc-row .k { color: var(--ink-faint); }
+    .dvc-row .v { font-family: 'Space Grotesk', sans-serif; font-weight: 600; }
+    .dvc-msg { margin: 6px 14px 16px; background: var(--accent-soft); border: 1px solid rgba(238,108,43,0.25); border-radius: 12px; padding: 12px 14px; }
+    .dvc-msg .from { font-size: 0.68rem; color: var(--accent); font-weight: 700; letter-spacing: 0.02em; margin-bottom: 3px; }
+    .dvc-msg .txt { font-size: 0.8rem; color: var(--ink); }
+
+    /* ---------- Problem / Before-After ---------- */
+    .sec-head { margin-bottom: 56px; max-width: 720px; }
+    .sec-head h2 { font-size: clamp(1.7rem, 3.6vw, 2.5rem); margin-bottom: 18px; }
+    .ba-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+    .ba-card { border-radius: var(--r-card); padding: 34px 32px; border: 1px solid var(--line); }
+    .ba-before { background: var(--bg-2); }
+    .ba-after { background: linear-gradient(165deg, rgba(238,108,43,0.14), rgba(238,108,43,0.03)); border-color: rgba(238,108,43,0.3); }
+    .ba-tag { display: inline-block; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.74rem; letter-spacing: 0.18em; padding: 6px 14px; border-radius: var(--r-pill); margin-bottom: 22px; }
+    .ba-before .ba-tag { background: var(--bg-3); color: var(--ink-dim); }
+    .ba-after .ba-tag { background: var(--accent); color: #14110D; }
+    .ba-list { list-style: none; }
+    .ba-list li { display: flex; gap: 13px; padding: 13px 0; font-size: 0.98rem; border-bottom: 1px solid var(--line-2); }
+    .ba-list li:last-child { border-bottom: none; }
+    .ba-list .ico { flex: none; width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; font-size: 0.8rem; font-weight: 700; margin-top: 3px; }
+    .ba-before .ico { background: rgba(255,255,255,0.06); color: var(--ink-faint); }
+    .ba-after .ico { background: var(--accent); color: #14110D; }
+    .ba-before li { color: var(--ink-dim); }
+
+    /* ---------- Problem: 3 pains ---------- */
+    .pain-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+    .pain-card { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-card); padding: 34px 30px; transition: transform 0.25s var(--ease), border-color 0.25s var(--ease); }
+    .pain-card:hover { transform: translateY(-4px); border-color: rgba(238,108,43,0.4); }
+    .pain-card .idx { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 18px; }
+    .pain-card h3 { font-size: 1.22rem; margin-bottom: 12px; line-height: 1.5; }
+    .pain-card p { color: var(--ink-dim); font-size: 0.94rem; }
+    .pain-foot { margin-top: 40px; text-align: center; font-size: 1.08rem; font-weight: 700; color: var(--ink); }
+    .pain-foot .accent { color: var(--accent); }
+
+    /* ---------- Features bento ---------- */
+    #features { background: var(--bg-2); }
+    .bento { display: grid; grid-template-columns: repeat(6, 1fr); gap: 18px; grid-auto-rows: minmax(180px, auto); }
+    .cell { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-card); padding: 30px; transition: transform 0.25s var(--ease), border-color 0.25s var(--ease); position: relative; overflow: hidden; }
+    .cell:hover { transform: translateY(-4px); border-color: rgba(238,108,43,0.4); }
+    .cell h3 { font-size: 1.18rem; margin-bottom: 10px; }
+    .cell p { color: var(--ink-dim); font-size: 0.92rem; }
+    .cell .num-tag { font-family: 'Space Grotesk', sans-serif; color: var(--ink-faint); font-size: 0.78rem; font-weight: 600; margin-bottom: 16px; letter-spacing: 0.1em; }
+    .c-hero { grid-column: span 3; grid-row: span 2; background: linear-gradient(160deg, rgba(238,108,43,0.16), var(--bg) 70%); border-color: rgba(238,108,43,0.28); display: flex; flex-direction: column; justify-content: flex-end; }
+    .c-hero h3 { font-size: 1.7rem; }
+    .c-hero p { font-size: 1rem; max-width: 40ch; }
+    .c-hero .badge { align-self: flex-start; background: var(--accent); color: #14110D; font-size: 0.72rem; font-weight: 700; padding: 6px 13px; border-radius: var(--r-pill); margin-bottom: auto; }
+    .c-wide { grid-column: span 3; }
+    .c-std { grid-column: span 2; }
+    .c-tint { background: linear-gradient(165deg, var(--bg-3), var(--bg)); }
+
+    /* ---------- Differentiator ---------- */
+    .diff-grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 64px; align-items: center; }
+    .diff h2 { font-size: clamp(1.9rem, 4vw, 2.8rem); margin-bottom: 22px; }
+    .diff h2 .accent { color: var(--accent); }
+    .diff-points { list-style: none; margin-top: 30px; }
+    .diff-points li { display: flex; gap: 15px; padding: 15px 0; border-bottom: 1px solid var(--line-2); }
+    .diff-points li:last-child { border-bottom: none; }
+    .diff-points .ico { flex: none; width: 30px; height: 30px; border-radius: 9px; background: var(--accent-soft); border: 1px solid rgba(238,108,43,0.3); color: var(--accent); display: grid; place-items: center; font-weight: 700; }
+    .diff-points .t { font-weight: 700; font-size: 1rem; }
+    .diff-points .d { color: var(--ink-dim); font-size: 0.9rem; }
+
+    /* ---------- ROI band ---------- */
+    #roi { background: var(--bg-2); text-align: center; }
+    #roi h2 { font-size: clamp(1.7rem, 3.8vw, 2.6rem); max-width: 30ch; margin: 0 auto 14px; }
+    #roi .lead { margin: 0 auto; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 56px; }
+    .stat { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-card); padding: 40px 22px; }
+    .stat .n { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: clamp(2.2rem, 5vw, 3.1rem); color: var(--accent); line-height: 1; }
+    .stat .c { margin-top: 14px; color: var(--ink-dim); font-size: 0.92rem; }
+    #roi .kicker-line { margin-top: 36px; color: var(--ink); font-weight: 700; font-size: 1.05rem; }
+
+    /* ---------- Pricing ---------- */
+    .price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 880px; margin: 0 auto; }
+    .plan { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-card); padding: 40px 36px; position: relative; display: flex; flex-direction: column; }
+    .plan.featured { border-color: rgba(238,108,43,0.45); background: linear-gradient(170deg, rgba(238,108,43,0.10), var(--bg-2) 60%); }
+    .plan .ribbon { position: absolute; top: 22px; right: 22px; background: var(--accent); color: #14110D; font-size: 0.7rem; font-weight: 700; padding: 5px 12px; border-radius: var(--r-pill); }
+    .plan .name { font-size: 1.2rem; font-weight: 900; margin-bottom: 6px; }
+    .plan .target { color: var(--ink-dim); font-size: 0.86rem; margin-bottom: 22px; }
+    .plan .price { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 2.7rem; line-height: 1; }
+    .plan .price small { font-family: 'Noto Sans JP'; font-size: 0.92rem; color: var(--ink-dim); font-weight: 500; }
+    .plan .yen { font-size: 1.3rem; vertical-align: 0.5em; margin-right: 2px; }
+    .plan .cap { align-self: flex-start; margin-top: 16px; font-size: 0.82rem; font-weight: 700; color: var(--ink); background: var(--bg-3); border: 1px solid var(--line); padding: 6px 14px; border-radius: var(--r-pill); }
+    .plan.featured .cap { background: var(--accent-soft); border-color: rgba(238,108,43,0.35); color: var(--accent); }
+    .plan ul { list-style: none; margin: 28px 0 32px; flex: 1 0 auto; }
+    .plan li { display: flex; gap: 11px; padding: 9px 0; font-size: 0.94rem; color: var(--ink-dim); }
+    .plan li .ck { color: var(--accent); font-weight: 700; flex: none; }
+    .plan .btn { width: 100%; }
+    .price-note { text-align: center; color: var(--ink-faint); font-size: 0.86rem; margin-top: 32px; }
+
+    /* ---------- Flow ---------- */
+    #flow { background: var(--bg-2); }
+    .flow-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; counter-reset: step; }
+    .step { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-card); padding: 36px 30px; position: relative; }
+    .step .n { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.82rem; color: var(--accent); letter-spacing: 0.12em; margin-bottom: 16px; }
+    .step h3 { font-size: 1.28rem; margin-bottom: 10px; }
+    .step p { color: var(--ink-dim); font-size: 0.92rem; }
+
+    /* ---------- Final CTA ---------- */
+    #cta { text-align: center; }
+    .cta-box { background: linear-gradient(150deg, var(--accent), var(--accent-deep)); border-radius: 28px; padding: 72px 32px; position: relative; overflow: hidden; }
+    .cta-box::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 80% 0%, rgba(255,255,255,0.22), transparent 45%); pointer-events: none; }
+    .cta-box h2 { font-size: clamp(1.8rem, 4.4vw, 2.8rem); color: #14110D; margin-bottom: 18px; position: relative; }
+    .cta-box p { color: #3A2410; font-weight: 500; margin-bottom: 34px; position: relative; max-width: 46ch; margin-left: auto; margin-right: auto; }
+    .cta-box .btn-light { background: #14110D; color: var(--ink); position: relative; }
+    .cta-box .btn-light:hover { background: #000; transform: translateY(-2px); }
+    .cta-box .cta-fine { color: #3A2410; font-size: 0.82rem; font-weight: 600; margin: 18px auto 0; }
+
+    /* ---------- FAQ ---------- */
+    #faq .wrap { max-width: 820px; }
+    #faq .sec-head { text-align: center; margin-left: auto; margin-right: auto; }
+    .faq-list { margin-top: 8px; }
+    .faq-item { border-bottom: 1px solid var(--line); }
+    .faq-item summary { list-style: none; cursor: pointer; padding: 24px 4px; font-weight: 700; font-size: 1.04rem; display: flex; justify-content: space-between; align-items: center; gap: 18px; transition: color 0.2s; }
+    .faq-item summary::-webkit-details-marker { display: none; }
+    .faq-item summary:hover { color: var(--accent); }
+    .faq-item .mk { flex: none; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.4rem; color: var(--accent); line-height: 1; transition: transform 0.25s var(--ease); }
+    .faq-item[open] .mk { transform: rotate(45deg); }
+    .faq-item .ans { padding: 0 4px 26px; color: var(--ink-dim); font-size: 0.96rem; max-width: 70ch; }
+
+    /* ---------- Footer ---------- */
+    footer { border-top: 1px solid var(--line); padding: 72px 0 40px; }
+    .foot-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 40px; }
+    .foot-brand .brand { margin-bottom: 16px; }
+    .foot-brand p { color: var(--ink-dim); font-size: 0.9rem; max-width: 30ch; }
+    .foot-col h4 { font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 18px; font-family: 'Space Grotesk'; font-weight: 600; }
+    .foot-col a, .foot-col p { display: block; color: var(--ink-dim); font-size: 0.9rem; padding: 5px 0; transition: color 0.2s; }
+    .foot-col a:hover { color: var(--accent); }
+    .foot-bottom { margin-top: 56px; padding-top: 28px; border-top: 1px solid var(--line-2); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; color: var(--ink-faint); font-size: 0.8rem; }
+    .foot-note { max-width: 62ch; line-height: 1.7; }
+
+    /* ---------- Reveal animation ---------- */
+    .reveal { opacity: 0; transform: translateY(26px); transition: opacity 0.7s var(--ease), transform 0.7s var(--ease); }
+    .reveal.in { opacity: 1; transform: none; }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 960px) {
+      .nav-links { display: none; }
+      .hero-grid, .diff-grid { grid-template-columns: 1fr; gap: 44px; }
+      .diff-grid .device-wrap { order: -1; }
+      .bento { grid-template-columns: repeat(2, 1fr); grid-auto-rows: auto; }
+      .c-hero, .c-wide, .c-std { grid-column: span 2; grid-row: auto; }
+      .pain-grid { grid-template-columns: 1fr; }
+      .foot-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 680px) {
+      section { padding: 80px 0; }
+      .nav-login { display: none; }
+      .ba-grid, .stats, .price-grid, .flow-grid { grid-template-columns: 1fr; }
+      .bento { grid-template-columns: 1fr; }
+      .c-hero, .c-wide, .c-std { grid-column: span 1; }
+      .foot-grid { grid-template-columns: 1fr 1fr; }
+      .hero h1 { font-size: 2.15rem; }
+      .cta-box { padding: 52px 24px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+      .reveal { opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <span class="top-sentinel" id="top-sentinel" aria-hidden="true"></span>
+
+  <!-- ===== Header ===== -->
+  <header id="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="#top" aria-label="くるまカルテ ホーム">
+        <span class="brand-mark">車</span>
+        <span>くるまカルテ</span>
+      </a>
+      <nav class="nav-links" aria-label="メインナビゲーション">
+        <a href="#problem">課題</a>
+        <a href="#features">機能</a>
+        <a href="#diff">愛車マイページ</a>
+        <a href="#pricing">料金</a>
+        <a href="#faq">よくある質問</a>
+      </nav>
+      <div class="nav-cta">
+        <a class="nav-login" href="https://kuruma-karte.vercel.app">ログイン</a>
+        <a class="btn btn-primary" href="https://kuruma-karte.vercel.app">30日無料で試す</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== Hero ===== -->
+  <section class="hero" id="top">
+    <div class="wrap hero-grid">
+      <div class="hero-copy reveal">
+        <span class="hero-kicker"><span class="dot"></span>For 町工場 / 整備工場</span>
+        <h1>車検客を、逃さない。<br><span class="accent">忘れられない</span>店になる。</h1>
+        <p class="lead">車検通知をハガキで送る時代は、終わりました。AIが愛車を診断し、お客様はスマホで自分の愛車を確認。予約も整備も、自然に回り続ける。それが、くるまカルテです。</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="https://kuruma-karte.vercel.app">30日無料で試す<span class="btn-arrow">&rarr;</span></a>
+          <a class="btn btn-ghost" href="#features">機能を見る</a>
+        </div>
+        <p class="hero-note">クレジットカード登録不要・30日間すべての機能を無料・いつでも解約OK。</p>
+      </div>
+
+      <div class="device-wrap reveal">
+        <!-- 実機UIプレビュー：オーナー向け「愛車マイページ」。デモ用サンプルデータ。 -->
+        <div class="device" role="img" aria-label="お客様の愛車マイページの画面プレビュー">
+          <div class="device-screen">
+            <div class="dvc-photo">
+              <!-- TODO: ガレージJ等の実車写真に差し替え推奨（640x420） -->
+              <img src="https://picsum.photos/seed/kurumakarte-aisya/640/420" alt="登録された愛車の写真">
+              <div class="dvc-cap">
+                <div class="car">ハイエース ワイドミドル</div>
+                <div class="sub">三好モータース が発行</div>
+              </div>
+            </div>
+            <div class="dvc-count">
+              <div class="label">次の車検まで</div>
+              <div class="num">あと58<small>日</small></div>
+            </div>
+            <div class="dvc-rows">
+              <div class="dvc-row"><span class="k">購入日</span><span class="v">2021.04.10</span></div>
+              <div class="dvc-row"><span class="k">前回オイル交換</span><span class="v">2026.02.15</span></div>
+              <div class="dvc-row"><span class="k">走行距離</span><span class="v">48,200 km</span></div>
+            </div>
+            <div class="dvc-msg">
+              <div class="from">三好モータース からのお知らせ</div>
+              <div class="txt">そろそろ車検のご案内です。ご都合いかがでしょうか。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Problem ===== -->
+  <section id="problem">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">こんなお悩み、ありませんか？</span>
+        <h2>町工場の8割が抱える、<br>「顧客流出」。</h2>
+        <p class="lead">案内が一度抜けるだけで、お客様は静かに他店へ流れます。原因は、たいてい次の3つです。</p>
+      </div>
+      <div class="pain-grid">
+        <div class="pain-card reveal">
+          <div class="idx en">01</div>
+          <h3>ハガキを送っても、<br>読まれない</h3>
+          <p>開封率は10%以下。お客様の手元に届かず、車検客を取り逃がす日々。</p>
+        </div>
+        <div class="pain-card reveal">
+          <div class="idx en">02</div>
+          <h3>顧客情報が、<br>ノートのまま</h3>
+          <p>紙の台帳とエクセル。「あの白いハイエース、いつ車検だっけ？」を探すのに10分。</p>
+        </div>
+        <div class="pain-card reveal">
+          <div class="idx en">03</div>
+          <h3>ディーラーに、<br>持っていかれる</h3>
+          <p>大手は My◯◯ アプリでフォロー万全。町工場は何もできず、お客様を奪われる。</p>
+        </div>
+      </div>
+      <p class="pain-foot reveal">くるまカルテは、この流出を<span class="accent">ゼロ</span>にします。</p>
+    </div>
+  </section>
+
+  <!-- ===== Features bento ===== -->
+  <section id="features">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">Key Features</span>
+        <h2>町工場に必要な機能、ぜんぶ。</h2>
+        <p class="lead">入力も、通知も、提案も。手間のかかる仕事はAIに任せて、あなたはお客様と向き合うだけ。</p>
+      </div>
+      <div class="bento">
+        <div class="cell c-hero reveal">
+          <span class="badge">Powered by Claude AI</span>
+          <h3>車検証の写真で、AI自動入力</h3>
+          <p>お客様が車検証を撮るだけ。AIがナンバー・車検満了日・車種を読み取って自動入力します。電子車検証（2023年〜）にも対応。手入力の手間は、もうありません。</p>
+        </div>
+        <div class="cell c-wide c-tint reveal">
+          <div class="num-tag en">AUTO</div>
+          <h3>車検通知 完全自動化</h3>
+          <p>車検の3ヶ月前・1ヶ月前・2週間前に、メール＋LINEで自動配信。Liny（Lステップ系）とも連携し、既存の配信フローと共存できます。</p>
+        </div>
+        <div class="cell c-wide reveal">
+          <div class="num-tag en">AI</div>
+          <h3>AIが「次の整備」を提案</h3>
+          <p>走行距離・整備履歴・季節要因をAIが分析し、お客様に「次にやるべき整備」を3つ提案。店主には"電話の話題"まで自動生成します。</p>
+        </div>
+        <div class="cell c-std reveal">
+          <div class="num-tag en">BOOK</div>
+          <h3>お客様から入庫予約</h3>
+          <p>マイページからオイル交換・車検をお客様が自分で申請。店主はワンタップ承認、LINEで通知。</p>
+        </div>
+        <div class="cell c-std reveal">
+          <div class="num-tag en">THEME</div>
+          <h3>店舗ブランドカラー</h3>
+          <p>Rosso・Premium Black・Bavarian Blue など6テーマ。お店の世界観をマイページにも反映。</p>
+        </div>
+        <div class="cell c-std reveal">
+          <div class="num-tag en">PHOTO</div>
+          <h3>整備の Before / After 写真</h3>
+          <p>作業前後の写真を整備記録に添付。「ちゃんとやってくれた」が伝わり、信頼が積み上がる。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Differentiator ===== -->
+  <section id="diff" class="diff">
+    <div class="wrap diff-grid">
+      <div class="reveal">
+        <span class="eyebrow">B2B2C ─ 競合と決定的に違う点</span>
+        <h2>お客様自身が、<br>愛車を<span class="accent">眺める時間</span>が増える。</h2>
+        <p class="lead">競合はすべて"車屋さんの業務ツール"。くるまカルテだけが、お客様のスマホに常駐する「愛車のページ」です。お薬手帳の、車版。</p>
+        <ul class="diff-points">
+          <li>
+            <span class="ico">∞</span>
+            <div><div class="t">ALWAYS WITH YOU</div><div class="d">愛車との時間を1秒単位で刻むカウンター。開くたび、あなたのお店を思い出す。</div></div>
+          </li>
+          <li>
+            <span class="ico">○</span>
+            <div><div class="t">ツーリングの記録</div><div class="d">行った場所を地図にピンで残せる。愛車の思い出が、お店経由で積み上がる。</div></div>
+          </li>
+          <li>
+            <span class="ico">↗</span>
+            <div><div class="t">シェアで自然拡散</div><div class="d">マイページをLINEやXで共有。「うちもこれにしたい」と車仲間が来店する導線。</div></div>
+          </li>
+        </ul>
+      </div>
+      <div class="device-wrap reveal">
+        <!-- 実機スクリーンショット：実在のお客様の愛車マイページ（ポルシェ911）。 -->
+        <div class="device" role="img" aria-label="お客様の愛車マイページの実画面（ポルシェ911）">
+          <div class="device-screen device-screen--shot">
+            <img class="dvc-shot" src="assets/mypage-porsche911.png" alt="お客様の愛車マイページの実画面。ポルシェ911の写真とALWAYS WITH YOUカウンター。">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ROI band ===== -->
+  <section id="roi">
+    <div class="wrap">
+      <h2 class="reveal">車検1台で、ペイします。</h2>
+      <p class="lead reveal">車検整備の利益は、1台あたり数万円。月に1台多く逃さなければ、それだけで元が取れます。</p>
+      <div class="stats">
+        <div class="stat reveal"><div class="n en">2.5<small style="font-size:1.2rem">万円</small></div><div class="c">車検1台あたりの粗利（控えめな試算）</div></div>
+        <div class="stat reveal"><div class="n en">5,000<small style="font-size:1.2rem">円</small></div><div class="c">スタンダードプランの月額</div></div>
+        <div class="stat reveal"><div class="n en">0<small style="font-size:1.2rem">円</small></div><div class="c">印刷代・郵送代（ハガキDM不要）</div></div>
+      </div>
+      <p class="kicker-line reveal">2人引き留めれば、あとはまるごと利益です。</p>
+    </div>
+  </section>
+
+  <!-- ===== Pricing ===== -->
+  <section id="pricing">
+    <div class="wrap">
+      <div class="sec-head reveal" style="text-align:center; margin-left:auto; margin-right:auto;">
+        <span class="eyebrow">Pricing</span>
+        <h2>シンプルな、2プラン。</h2>
+      </div>
+      <div class="price-grid">
+        <div class="plan reveal">
+          <div class="name">スタンダード</div>
+          <div class="target">はじめての方におすすめ</div>
+          <div class="price"><span class="yen">¥</span>5,000<small> / 月（税別）</small></div>
+          <span class="cap">お客様 200名まで</span>
+          <ul>
+            <li><span class="ck">&check;</span>お客様マイページ</li>
+            <li><span class="ck">&check;</span>車検3ヶ月／1ヶ月／2週間前メール通知</li>
+            <li><span class="ck">&check;</span>AI整備提案エンジン</li>
+            <li><span class="ck">&check;</span>車検証写真OCR</li>
+            <li><span class="ck">&check;</span>整備記録＋Before/After写真</li>
+            <li><span class="ck">&check;</span>入庫予約管理</li>
+            <li><span class="ck">&check;</span>店舗テーマカラー</li>
+          </ul>
+          <a class="btn btn-ghost" href="https://kuruma-karte.vercel.app">30日無料で試す</a>
+        </div>
+        <div class="plan featured reveal">
+          <span class="ribbon">おすすめ</span>
+          <div class="name">プロ</div>
+          <div class="target">LINE配信を本気でやる方</div>
+          <div class="price"><span class="yen">¥</span>10,000<small> / 月（税別）</small></div>
+          <span class="cap">お客様 無制限</span>
+          <ul>
+            <li><span class="ck">&check;</span>スタンダードのすべて</li>
+            <li><span class="ck">&check;</span>LINE Messaging API 連携</li>
+            <li><span class="ck">&check;</span>Liny／Lステップ系 タグ連携</li>
+            <li><span class="ck">&check;</span>マルチスタッフ（3名まで）</li>
+            <li><span class="ck">&check;</span>優先サポート</li>
+            <li><span class="ck">&check;</span>今後の新機能 優先アクセス</li>
+          </ul>
+          <a class="btn btn-primary" href="https://kuruma-karte.vercel.app">30日無料で試す</a>
+        </div>
+      </div>
+      <p class="price-note reveal">初期費用0円・30日間無料・クレジットカード登録不要・いつでも解約OK。</p>
+    </div>
+  </section>
+
+  <!-- ===== Flow ===== -->
+  <section id="flow">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <h2>はじめ方は、かんたん。</h2>
+        <p class="lead">むずかしい設定はありません。今日申し込んで、今日から使えます。</p>
+      </div>
+      <div class="flow-grid">
+        <div class="step reveal">
+          <div class="n en">01</div>
+          <h3>申し込む</h3>
+          <p>登録3分。クレジットカード登録は不要。メールアドレスだけで、すぐにお店のページが立ち上がります。</p>
+        </div>
+        <div class="step reveal">
+          <div class="n en">02</div>
+          <h3>車検証を撮るだけ</h3>
+          <p>車検証を撮影すれば、AIがナンバー・満了日・車種を自動入力。QRを見せれば、お客様自身でも登録できます。</p>
+        </div>
+        <div class="step reveal">
+          <div class="n en">03</div>
+          <h3>あとは自動で回り続ける</h3>
+          <p>車検が近づけばメール＋LINEで自動通知。AIが次の整備まで提案。あなたは、待っているだけです。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Final CTA ===== -->
+  <section id="cta">
+    <div class="wrap">
+      <div class="cta-box reveal">
+        <h2>車検客を逃さない店に、なる。</h2>
+        <p>ハガキ印刷代より安い金額で、お客様との関係を一生モノに。まずは30日間、無料で全機能をお試しください。</p>
+        <a class="btn btn-light" href="https://kuruma-karte.vercel.app">くるまカルテを30日無料で始める<span class="btn-arrow">&rarr;</span></a>
+        <p class="cta-fine">登録3分。クレジットカード登録不要。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FAQ ===== -->
+  <section id="faq">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">FAQ</span>
+        <h2>よくあるご質問</h2>
+      </div>
+      <div class="faq-list reveal">
+        <details class="faq-item">
+          <summary>お客様にPCやアプリのダウンロードは必要？<span class="mk">+</span></summary>
+          <p class="ans">いいえ。スマホのブラウザだけでOK。お渡しするQRをカメラで撮るだけで、マイページが開きます。</p>
+        </details>
+        <details class="faq-item">
+          <summary>既に CarRide や他社サービスを使っているのですが…<span class="mk">+</span></summary>
+          <p class="ans">他社の多くは業務効率化ツールなので、くるまカルテ（お客様向け体験）と併用が可能です。</p>
+        </details>
+        <details class="faq-item">
+          <summary>お客様データは安全ですか？<span class="mk">+</span></summary>
+          <p class="ans">国内サーバー（Supabase / Vercel）で暗号化して保管。各店舗の情報は完全に分離されます。</p>
+        </details>
+        <details class="faq-item">
+          <summary>既存の Liny / Lステップは活かせますか？<span class="mk">+</span></summary>
+          <p class="ans">はい。プロプランで API 連携が可能です。くるまカルテは「タグを付ける」役割を担い、配信文面は今までの Liny シナリオをそのまま使えます。</p>
+        </details>
+        <details class="faq-item">
+          <summary>お客様への押し付け感が心配です<span class="mk">+</span></summary>
+          <p class="ans">マイページは「お客様の愛車のページ」として設計しています。ALWAYS WITH YOU カウンターや思い出ギャラリーなど、お客様が見たくなる仕掛けで、自然に開いてくれます。</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Footer ===== -->
+  <footer>
+    <div class="wrap">
+      <div class="foot-grid">
+        <div class="foot-brand">
+          <a class="brand" href="#top">
+            <span class="brand-mark">車</span>
+            <span>くるまカルテ</span>
+          </a>
+          <p>町工場のための、お客様向け愛車マイページSaaS。車検も、整備も、思い出も、お客様のスマホへ。</p>
+        </div>
+        <div class="foot-col">
+          <h4>Service</h4>
+          <a href="#problem">課題</a>
+          <a href="#features">機能</a>
+          <a href="#diff">愛車マイページ</a>
+          <a href="#pricing">料金</a>
+          <a href="#faq">よくある質問</a>
+        </div>
+        <div class="foot-col">
+          <h4>Company</h4>
+          <p>株式会社UrakaTA</p>
+          <a href="https://kuruma-karte.vercel.app">サービスを見る</a>
+        </div>
+        <div class="foot-col">
+          <h4>Contact</h4>
+          <a href="mailto:sato@urakata.biz">sato@urakata.biz</a>
+          <a href="https://kuruma-karte.vercel.app">無料で試す</a>
+        </div>
+      </div>
+      <div class="foot-bottom">
+        <span>Powered by Anthropic Claude / Supabase / Vercel &middot; &copy; 2026 UrakaTA Inc.</span>
+        <span class="foot-note">表示価格はすべて税別です。仕様は開発中につき、予告なく変更となる場合があります。画面はデモ用のサンプルです。</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // Header: transparent -> solid, using IntersectionObserver on a top sentinel (no scroll listener).
+      var header = document.getElementById('site-header');
+      var sentinel = document.getElementById('top-sentinel');
+      if (sentinel && 'IntersectionObserver' in window) {
+        new IntersectionObserver(function (entries) {
+          header.classList.toggle('solid', !entries[0].isIntersecting);
+        }, { rootMargin: '-1px 0px 0px 0px', threshold: 0 }).observe(sentinel);
+      } else {
+        header.classList.add('solid');
+      }
+
+      // Scroll reveal.
+      var items = document.querySelectorAll('.reveal');
+      if (reduce || !('IntersectionObserver' in window)) {
+        items.forEach(function (el) { el.classList.add('in'); });
+      } else {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (e) {
+            if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+          });
+        }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+        items.forEach(function (el) { io.observe(el); });
+      }
+    })();
+  </script>
+</body>
+</html>
