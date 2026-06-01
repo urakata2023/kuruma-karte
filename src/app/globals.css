@@ -347,3 +347,83 @@ body {
   animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ───────────────────────────────────────────────────────
+ * 公開LP モーション / 質感 (Phase E+ リデザイン)
+ * モータースポーツ・エディトリアル: マットブラック × レーシングレッド
+ * ─────────────────────────────────────────────────────── */
+
+/* 無限スクロールするティッカー（同一内容を2連結し -50% で繋ぐ） */
+@keyframes lp-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.lp-marquee {
+  animation: lp-marquee 32s linear infinite;
+  will-change: transform;
+}
+
+/* ヒーロー背景のレッドグロー脈動 */
+@keyframes lp-glow {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+.lp-glow {
+  animation: lp-glow 5s ease-in-out infinite;
+}
+
+/* スキャンライン（ヒーローデバイスの上を走る走査線） */
+@keyframes lp-scan {
+  0% {
+    transform: translateY(-120%);
+  }
+  100% {
+    transform: translateY(820%);
+  }
+}
+.lp-scan {
+  animation: lp-scan 4.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* セクション入場時のフェードアップ（IntersectionObserver不要・即時） */
+@keyframes lp-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ブループリント風グリッド背景 */
+.lp-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+/* 縦書き（セクションのインデックス番号などに使用） */
+.lp-vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-marquee,
+  .lp-glow,
+  .lp-scan {
+    animation: none !important;
+  }
+}
+
