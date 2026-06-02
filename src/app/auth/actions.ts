@@ -3,8 +3,20 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 
 export type AuthFormState = { error?: string } | undefined
+
+/**
+ * 確認メール内リンクのリダイレクト先（/auth/confirm）を組み立てる。
+ * Origin はリクエストヘッダから取得し、無ければ NEXT_PUBLIC_APP_URL にフォールバック。
+ */
+async function buildEmailRedirectTo(): Promise<string> {
+  const h = await headers()
+  const origin =
+    h.get('origin') ?? process.env.NEXT_PUBLIC_APP_URL ?? ''
+  return `${origin}/auth/confirm?next=/dashboard`
+}
 
 /**
  * メール＋パスワードでログイン
@@ -62,7 +74,11 @@ export async function signup(
     if (new Date(invitation.expires_at) < new Date())
       return { error: 'この招待は有効期限切れです' }
 
-    const { data, error } = await supabase.auth.signUp({ email, password })
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: await buildEmailRedirectTo() },
+    })
     if (error) return { error: error.message }
     if (!data.user) return { error: '登録に失敗しました' }
     // Supabase Auth は Confirm Email OFF 時に既存ユーザーをエラー無しで
@@ -89,7 +105,10 @@ export async function signup(
       .update({ used_by: data.user.id, used_at: new Date().toISOString() })
       .eq('id', invitation.id)
 
-    redirect('/dashboard')
+    // Confirm email OFF ならセッションが張られているので即ダッシュボードへ。
+    // ON の場合は session が null なので「確認メール送りました」画面へ。
+    if (data.session) redirect('/dashboard')
+    redirect(`/auth/check-email?email=${encodeURIComponent(email)}`)
   }
 
   // 通常の新規オーナー登録
@@ -97,7 +116,11 @@ export async function signup(
   const phone = ((formData.get('phone') as string) ?? '').trim()
   if (!phone) return { error: '電話番号を入力してください' }
 
-  const { data, error } = await supabase.auth.signUp({ email, password })
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo: await buildEmailRedirectTo() },
+  })
   if (error) return { error: error.message }
   if (!data.user) return { error: '登録に失敗しました（ユーザー作成失敗）' }
   // 既存ユーザー検知（上記コメント参照）。これがないと「同じメアドで別店名」を
@@ -132,7 +155,10 @@ export async function signup(
     role: 'owner',
   })
 
-  redirect('/dashboard')
+  // Confirm email OFF ならセッション有 → 即ダッシュボード。
+  // ON なら session が null → 「確認メール送りました」画面へ。
+  if (data.session) redirect('/dashboard')
+  redirect(`/auth/check-email?email=${encodeURIComponent(email)}`)
 }
 
 export async function logout() {
