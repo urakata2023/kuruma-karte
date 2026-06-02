@@ -4,6 +4,12 @@ import { useActionState } from 'react'
 import Link from 'next/link'
 import { signup } from '../auth/actions'
 
+const inputCls =
+  'w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-[var(--ink)] outline-none transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] placeholder:text-white/30 focus:border-[var(--theme-primary)] focus:bg-white/[0.05] focus:ring-2 focus:ring-[var(--theme-primary)]/30'
+
+const labelCls =
+  'mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55'
+
 export function SignupForm({
   inviteCode,
   shopName,
@@ -15,18 +21,25 @@ export function SignupForm({
 
   return (
     <>
-      <form action={action} className="space-y-4">
+      <form action={action} className="space-y-5">
         {inviteCode ? (
           <>
             <input type="hidden" name="invite_code" value={inviteCode} />
-            <div className="rounded-md border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-700 dark:bg-green-950 dark:text-green-300">
+            <div
+              className="rounded-xl px-4 py-3 text-sm"
+              style={{
+                border: '1px solid rgba(241,197,87,0.3)',
+                background: 'rgba(241,197,87,0.08)',
+                color: 'var(--theme-accent)',
+              }}
+            >
               📨 {shopName} からの招待を受けて参加します
             </div>
           </>
         ) : (
           <>
-            <div className="space-y-1">
-              <label htmlFor="shop_name" className="block text-sm font-medium">
+            <div>
+              <label htmlFor="shop_name" className={labelCls}>
                 店名
               </label>
               <input
@@ -35,12 +48,12 @@ export function SignupForm({
                 type="text"
                 required
                 placeholder="例：◯◯モータース"
-                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                className={inputCls}
               />
             </div>
 
-            <div className="space-y-1">
-              <label htmlFor="phone" className="block text-sm font-medium">
+            <div>
+              <label htmlFor="phone" className={labelCls}>
                 お店の電話番号
               </label>
               <input
@@ -52,17 +65,17 @@ export function SignupForm({
                 autoComplete="tel"
                 placeholder="例：03-1234-5678"
                 pattern="[0-9\-\+\s\(\)]{10,15}"
-                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+                className={inputCls}
               />
-              <p className="text-xs text-zinc-500">
+              <p className="mt-1.5 text-xs leading-relaxed text-white/35">
                 お客様への自動通知やサポート連絡に使います。あとから設定画面でも変更できます。
               </p>
             </div>
           </>
         )}
 
-        <div className="space-y-1">
-          <label htmlFor="email" className="block text-sm font-medium">
+        <div>
+          <label htmlFor="email" className={labelCls}>
             メールアドレス
           </label>
           <input
@@ -71,12 +84,13 @@ export function SignupForm({
             type="email"
             required
             autoComplete="email"
-            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+            placeholder="you@example.com"
+            className={inputCls}
           />
         </div>
 
-        <div className="space-y-1">
-          <label htmlFor="password" className="block text-sm font-medium">
+        <div>
+          <label htmlFor="password" className={labelCls}>
             パスワード（8文字以上）
           </label>
           <input
@@ -86,12 +100,20 @@ export function SignupForm({
             required
             minLength={8}
             autoComplete="new-password"
-            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+            placeholder="••••••••"
+            className={inputCls}
           />
         </div>
 
         {state?.error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p
+            className="rounded-xl px-4 py-3 text-sm"
+            style={{
+              border: '1px solid rgba(220,26,26,0.35)',
+              background: 'rgba(220,26,26,0.1)',
+              color: '#ff8b8b',
+            }}
+          >
             {state.error}
           </p>
         )}
@@ -99,15 +121,24 @@ export function SignupForm({
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+          className="group relative flex w-full items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold text-white shadow-xl transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+          style={{ background: 'var(--theme-primary)' }}
         >
-          {pending ? '登録中…' : 'この内容で登録する'}
+          {pending ? '登録中…' : inviteCode ? 'この内容で参加する' : 'この内容で登録する'}
+          {!pending && (
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-base transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:-translate-y-[1px]">
+              →
+            </span>
+          )}
         </button>
       </form>
 
-      <p className="text-center text-sm text-zinc-500">
+      <p className="mt-6 text-center text-sm text-white/45">
         すでにアカウントをお持ちの方は{' '}
-        <Link href="/login" className="font-medium text-zinc-900 underline">
+        <Link
+          href="/login"
+          className="font-semibold text-white underline-offset-4 transition-colors hover:text-[var(--theme-accent)] hover:underline"
+        >
           ログイン
         </Link>
       </p>
