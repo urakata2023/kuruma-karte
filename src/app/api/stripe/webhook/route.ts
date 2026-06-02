@@ -67,15 +67,28 @@ export async function POST(req: Request) {
         const sub = event.data.object as Stripe.Subscription
         const shopId = sub.metadata?.shop_id
         if (shopId) {
-          // current_period_end は Stripe SDK のバージョンで型が変わるため
-          // unknown 経由で取得 (実体は number = unix秒)
-          const periodEnd = (sub as unknown as { current_period_end?: number })
-            .current_period_end
+          // current_period_end は Stripe API のバージョンによって場所が変わる
+          // - 2024 系: sub.current_period_end (number = unix秒)
+          // - 2025-2026 dahlia 以降: sub.items.data[0].current_period_end
+          // 両方対応する
+          const subRaw = sub as unknown as {
+            current_period_end?: number
+            items?: { data?: Array<{ current_period_end?: number }> }
+          }
+          const periodEnd =
+            subRaw.current_period_end ??
+            subRaw.items?.data?.[0]?.current_period_end ??
+            null
+
+          // checkout.session.completed が Webhook に未登録でも、ここで
+          // plan / stripe_customer_id を埋められるように冗長化（防御的設計）
           await admin
             .from('shops')
             .update({
               stripe_subscription_id: sub.id,
+              stripe_customer_id: sub.customer as string,
               subscription_status: sub.status,
+              plan: (sub.metadata?.plan as string) ?? undefined,
               current_period_end: periodEnd
                 ? new Date(periodEnd * 1000).toISOString()
                 : null,
