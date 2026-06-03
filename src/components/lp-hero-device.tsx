@@ -101,26 +101,28 @@ export function LpHeroDevice() {
             <MiniPlate />
           </div>
 
-          {/* ヒーロー写真エリア（車体のシルエット風グラデ） */}
-          <div
-            className="relative h-24 w-full"
-            style={{
-              background:
-                'radial-gradient(120% 120% at 70% 0%, color-mix(in srgb, var(--theme-primary) 40%, #1a1a1a), #0d0d0d 70%)',
-            }}
-          >
+          {/* ヒーロー写真エリア（愛車写真） */}
+          <div className="relative h-24 w-full overflow-hidden bg-[#0d0d0d]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/lp/hero-car.jpg"
+              alt="愛車"
+              className="absolute inset-0 h-full w-full object-cover"
+              style={{ objectPosition: 'center 42%' }}
+            />
+            {/* 下部を暗く落としてラベルを読みやすく */}
             <div
-              className="absolute inset-0 opacity-60"
+              className="absolute inset-0"
               style={{
-                backgroundImage:
-                  'linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.08) 50%, transparent 60%)',
+                background:
+                  'linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.6) 100%)',
               }}
             />
             <p
-              className="absolute bottom-2 left-4 text-[10px] font-medium uppercase tracking-[0.3em] text-white/55"
+              className="absolute bottom-2 left-4 text-[10px] font-medium uppercase tracking-[0.3em] text-white/75"
               style={{ fontFamily: 'var(--font-display), sans-serif' }}
             >
-              ABARTH 595
+              ROADSTER
             </p>
           </div>
 
