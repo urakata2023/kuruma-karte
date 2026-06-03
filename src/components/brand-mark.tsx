@@ -17,16 +17,16 @@ export function BrandMark({ className = "h-7 w-7" }: { className?: string }) {
       aria-label="くるまカルテ"
     >
       <rect width="512" height="512" rx="120" fill="var(--theme-primary)" />
-      <g transform="translate(256 256) scale(1.12) translate(-256 -256)">
+      <g transform="translate(256 256) scale(1.1) translate(-256 -256)">
         <path
-          d="M148 320 C158 302 178 300 196 306 C232 318 250 246 304 238 C344 232 360 252 368 298 C371 309 370 318 364 326"
+          d="M128 288 C162 285 208 273 236 246 C254 228 268 215 292 214 C312 213 328 216 344 230 C364 247 380 270 379 299"
           fill="none"
           stroke="var(--theme-primary-fg)"
-          strokeWidth="26"
+          strokeWidth="22"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <circle cx="361" cy="300" r="17" fill="var(--theme-accent)" />
+        <circle cx="364" cy="250" r="16" fill="var(--theme-accent)" />
       </g>
     </svg>
   );

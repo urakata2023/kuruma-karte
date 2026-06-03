@@ -2,8 +2,8 @@
   <!-- maskable: 全面ネイビー。アートは中央約78%のセーフエリア内に収める -->
   <rect width="512" height="512" fill="#1B2A3A"/>
   <g transform="translate(256 256) scale(0.78) translate(-256 -256)">
-    <path d="M148 320 C158 302 178 300 196 306 C232 318 250 246 304 238 C344 232 360 252 368 298 C371 309 370 318 364 326"
-          fill="none" stroke="#FAFAFA" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="361" cy="300" r="15" fill="#E8633A"/>
+    <path d="M128 288 C162 285 208 273 236 246 C254 228 268 215 292 214 C312 213 328 216 344 230 C364 247 380 270 379 299"
+          fill="none" stroke="#FAFAFA" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="364" cy="250" r="15" fill="#E8633A"/>
   </g>
 </svg>
