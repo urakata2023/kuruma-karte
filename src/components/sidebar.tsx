@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
+import { BrandMark } from '@/components/brand-mark'
 
 type NavItem = {
   href: string
@@ -104,10 +105,7 @@ export function Sidebar({
             style={{ color: 'var(--ink)' }}
             onClick={() => setMobileOpen(false)}
           >
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold"
-                  style={{ background: 'var(--theme-primary)', color: 'var(--theme-primary-fg)' }}>
-              く
-            </span>
+            <BrandMark className="h-7 w-7 shrink-0" />
             くるまカルテ
           </Link>
           <button

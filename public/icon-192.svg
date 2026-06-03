@@ -1,13 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="40" fill="#0a0a0a"/>
-  <g transform="translate(96 100)" fill="#fafafa" stroke="#fafafa" stroke-width="2" stroke-linejoin="round">
-    <!-- 車体 -->
-    <path d="M-58 10 L-58 -8 L-38 -28 L38 -28 L58 -8 L58 10 Z"/>
-    <!-- 窓 -->
-    <path d="M-32 -25 L-16 -10 L16 -10 L32 -25 Z" fill="#0a0a0a" stroke="none"/>
-    <!-- タイヤ -->
-    <circle cx="-35" cy="10" r="12" fill="#0a0a0a" stroke="#fafafa" stroke-width="3"/>
-    <circle cx="35" cy="10" r="12" fill="#0a0a0a" stroke="#fafafa" stroke-width="3"/>
-  </g>
-  <text x="96" y="160" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="18" font-weight="600" fill="#fafafa" text-anchor="middle">カルテ</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="くるまカルテ">
+  <rect width="512" height="512" rx="112" fill="#1B2A3A"/>
+  <path d="M128 288 C162 285 208 273 236 246 C254 228 268 215 292 214 C312 213 328 216 344 230 C364 247 380 270 379 299"
+        fill="none" stroke="#FAFAFA" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="364" cy="250" r="15" fill="#E8633A"/>
 </svg>

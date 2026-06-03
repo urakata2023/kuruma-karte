@@ -1,7 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="くるまカルテ">
-  <!-- maskable: 全面ネイビー。アートは中央約78%のセーフエリア内に収める -->
-  <rect width="512" height="512" fill="#1B2A3A"/>
-  <g transform="translate(256 256) scale(0.78) translate(-256 -256)">
+  <rect width="512" height="512" rx="96" fill="#1B2A3A"/>
+  <g transform="translate(256 256) scale(1.18) translate(-256 -256)">
     <path d="M128 288 C162 285 208 273 236 246 C254 228 268 215 292 214 C312 213 328 216 344 230 C364 247 380 270 379 299"
           fill="none" stroke="#FAFAFA" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
     <circle cx="364" cy="250" r="15" fill="#E8633A"/>

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { LpHeroDevice } from '@/components/lp-hero-device'
+import { BrandMark } from '@/components/brand-mark'
 
 /**
  * 公開LP (Phase E → リデザイン)
@@ -43,12 +44,7 @@ export default function LP() {
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5 sm:px-8">
           <div className="flex items-center gap-2.5">
-            <span
-              className="flex h-7 w-7 items-center justify-center rounded-md text-sm font-black text-white"
-              style={{ background: RED }}
-            >
-              K
-            </span>
+            <BrandMark className="h-7 w-7 shrink-0" />
             <span className="text-sm font-bold tracking-wide">くるまカルテ</span>
           </div>
           <nav className="flex items-center gap-2 text-sm sm:gap-4">
@@ -476,7 +472,8 @@ export default function LP() {
               lineHeight: 1.02,
             }}
           >
-            車検客を逃さない店に、なる。
+            <span className="inline-block">車検客を逃さない店に、</span>
+            <span className="inline-block">なる。</span>
           </h2>
           <p className="mx-auto mt-6 max-w-lg text-[15px] leading-relaxed text-white/85">
             登録は3分。クレジットカードは要りません。
@@ -532,12 +529,7 @@ export default function LP() {
       >
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
           <div className="flex items-center gap-2.5">
-            <span
-              className="flex h-7 w-7 items-center justify-center rounded-md text-sm font-black text-white"
-              style={{ background: RED }}
-            >
-              K
-            </span>
+            <BrandMark className="h-7 w-7 shrink-0" />
             <div>
               <p className="text-sm font-bold">くるまカルテ</p>
               <p className="text-[11px] text-white/45">
