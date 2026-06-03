@@ -472,7 +472,8 @@ export default function LP() {
               lineHeight: 1.02,
             }}
           >
-            車検客を逃さない店に、なる。
+            <span className="inline-block">車検客を逃さない店に、</span>
+            <span className="inline-block">なる。</span>
           </h2>
           <p className="mx-auto mt-6 max-w-lg text-[15px] leading-relaxed text-white/85">
             登録は3分。クレジットカードは要りません。
