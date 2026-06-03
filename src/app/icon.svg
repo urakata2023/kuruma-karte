@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="くるまカルテ">
+  <rect width="512" height="512" rx="96" fill="#1B2A3A"/>
+  <g transform="translate(256 256) scale(1.18) translate(-256 -256)">
+    <path d="M148 320 C158 302 178 300 196 306 C232 318 250 246 304 238 C344 232 360 252 368 298 C371 309 370 318 364 326"
+          fill="none" stroke="#FAFAFA" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="361" cy="300" r="16" fill="#E8633A"/>
+  </g>
+</svg>

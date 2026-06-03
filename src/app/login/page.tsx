@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import { login } from '../auth/actions'
 import Link from 'next/link'
+import { BrandMark } from '@/components/brand-mark'
 
 const RED = 'var(--theme-primary)'
 const GOLD = 'var(--theme-accent)'
@@ -44,12 +45,7 @@ export default function LoginPage() {
       {/* ── 左：エディトリアル・パネル ── */}
       <aside className="relative z-10 flex flex-col justify-between px-6 pb-6 pt-10 md:w-[46%] md:px-12 md:py-14 lg:px-16">
         <div className="flex items-center gap-2.5">
-          <span
-            className="flex h-8 w-8 items-center justify-center rounded-md text-sm font-black text-white shadow-lg"
-            style={{ background: RED }}
-          >
-            K
-          </span>
+          <BrandMark className="h-8 w-8 shrink-0 shadow-lg" />
           <span className="text-sm font-bold tracking-wide">くるまカルテ</span>
         </div>
 

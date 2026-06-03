@@ -39,13 +39,9 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "くるまカルテ",
   },
-  icons: {
-    icon: [
-      { url: "/icon-192.svg", sizes: "192x192", type: "image/svg+xml" },
-      { url: "/icon-512.svg", sizes: "512x512", type: "image/svg+xml" },
-    ],
-    apple: [{ url: "/icon-192.svg" }],
-  },
+  // アイコンは App Router のファイル規約で自動配線：
+  //   src/app/favicon.ico（タブ・レガシー） / src/app/icon.svg（タブ・モダン） / src/app/apple-icon.png（iOSホーム画面）
+  // PWA インストール用 192/512/maskable は public/manifest.json から参照。
 };
 
 export const viewport: Viewport = {
