@@ -468,8 +468,8 @@ export default function LP() {
             className="font-bold tracking-tight text-white"
             style={{
               fontFamily: 'var(--font-display), sans-serif',
-              fontSize: 'clamp(2rem, 5.5vw, 3.6rem)',
-              lineHeight: 1.02,
+              fontSize: 'clamp(1.7rem, 5.5vw, 3.6rem)',
+              lineHeight: 1.08,
             }}
           >
             <span className="inline-block">車検客を逃さない店に、</span>
