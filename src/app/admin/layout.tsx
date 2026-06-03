@@ -47,12 +47,6 @@ export default async function AdminLayout({
             </nav>
           </div>
           <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="text-xs text-zinc-500 hover:text-zinc-300"
-            >
-              店舗UIへ戻る →
-            </Link>
             <form action={logout}>
               <button
                 type="submit"
