@@ -723,7 +723,7 @@ function PlanCard({
 }) {
   return (
     <div
-      className="relative rounded-2xl border p-7"
+      className="relative flex h-full flex-col rounded-2xl border p-7"
       style={{
         borderColor: recommended
           ? 'var(--theme-primary)'
@@ -757,7 +757,7 @@ function PlanCard({
       </p>
       <p className="mt-1 text-xs text-white/45">{limit}</p>
 
-      <ul className="mt-6 space-y-2.5 text-sm">
+      <ul className="mt-6 flex-1 space-y-2.5 text-sm">
         {features.map((f) => (
           <li key={f} className="flex items-start gap-2.5">
             <span style={{ color: recommended ? RED : GOLD }}>✓</span>
