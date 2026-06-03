@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getSuperAdminEmail } from '@/lib/admin-auth'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 
@@ -31,6 +32,13 @@ export async function login(
 
   const { error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) return { error: error.message }
+
+  // スーパー管理者は店舗を持たないため /dashboard では getCurrentShop に弾かれて
+  // /login へ戻されてしまう。管理者は専用の /admin へ送る。
+  const superAdminEmail = getSuperAdminEmail()
+  if (superAdminEmail && email.trim().toLowerCase() === superAdminEmail) {
+    redirect('/admin')
+  }
 
   redirect('/dashboard')
 }
